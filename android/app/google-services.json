@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "968428438752",
+    "project_id": "leaveflow-b67b9",
+    "storage_bucket": "leaveflow-b67b9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:968428438752:android:489027f2b440e12c0fbc85",
+        "android_client_info": {
+          "package_name": "com.example.leaveflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtod8x13DFZuVF1Mv_kdwj2FAx6RWD_DA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
