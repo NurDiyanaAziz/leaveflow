@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:leaveflow/app/views/login.screen.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -16,6 +17,10 @@ class _HomepageState extends State<Homepage> {
 
   void signout() async {
     await FirebaseAuth.instance.signOut();
+    Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => LoginScreen()),
+    (Route<dynamic> route) => false,
+  );
   }
 
   @override
