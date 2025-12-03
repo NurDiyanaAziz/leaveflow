@@ -44,12 +44,15 @@ class LoginController extends GetxController {
         final user = FirebaseAuth.instance.currentUser;
 
         if (user == null) {
-          Get.snackbar('Error', 'User not found after sign-in.');
+          Get.snackbar(
+            'Error',
+            'User not found after sign-in.',
+            duration: const Duration(seconds: 15),
+          );
           return;
         }
 
         log('User email: ${user.email}, emailVerified: ${user.emailVerified}');
-        
         if (user.emailVerified) {
           // Get ID token
           final token = await user.getIdToken();
@@ -69,26 +72,44 @@ class LoginController extends GetxController {
           // User not verified: attempt to send verification email (with cooldown)
           try {
             // Check cooldown stored in SharedPrefs
-            final lastSentIso = await SharedPrefs.getLocalStorage('last_verify_sent');
+            final lastSentIso = await SharedPrefs.getLocalStorage(
+              'last_verify_sent',
+            );
             DateTime? lastSent;
             if (lastSentIso != null && lastSentIso.isNotEmpty) {
               lastSent = DateTime.tryParse(lastSentIso);
             }
 
             final now = DateTime.now();
-            final canSend = lastSent == null || now.difference(lastSent).inSeconds >= 60;
+            final canSend =
+                lastSent == null || now.difference(lastSent).inSeconds >= 120;
 
             if (canSend) {
               await user.sendEmailVerification();
-              await SharedPrefs.setLocalStorage('last_verify_sent', now.toIso8601String());
-              Get.snackbar('Verification Email Sent', 'Please check your email for the verification link.');
+              await SharedPrefs.setLocalStorage(
+                'last_verify_sent',
+                now.toIso8601String(),
+              );
+              Get.snackbar(
+                'Verification Email Sent',
+                'Please check your email for the verification link.',
+                duration: const Duration(seconds: 15),
+              );
             } else {
               final DateTime last = lastSent;
-              final wait = 60 - now.difference(last).inSeconds;
-              Get.snackbar('Please wait', 'You can resend verification email in $wait seconds.');
+              final wait = 120 - now.difference(last).inSeconds;
+              Get.snackbar(
+                'Please wait',
+                'You can resend verification email in $wait seconds.',
+                duration: const Duration(seconds: 15),
+              );
             }
           } catch (e) {
-            Get.snackbar('Error', 'Failed to send verification email: $e');
+            Get.snackbar(
+              'Error',
+              'Failed to send verification email: $e',
+              duration: const Duration(seconds: 15),
+            );
           }
 
           // Sign the user out to prevent unverified access
@@ -102,10 +123,18 @@ class LoginController extends GetxController {
       }
     } on FirebaseAuthException catch (e) {
       log('Firebase Auth Error: ${e.code} - ${e.message}');
-      Get.snackbar('Login Failed', e.message ?? 'Authentication failed');
+      Get.snackbar(
+        'Login Failed',
+        e.message ?? 'Authentication failed',
+        duration: const Duration(seconds: 15),
+      );
     } catch (e) {
       log('Login Error: $e');
-      Get.snackbar('Error', 'An unexpected error occurred');
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred',
+        duration: const Duration(seconds: 15),
+      );
     }
   }
 }

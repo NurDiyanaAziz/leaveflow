@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/views/wrapper.dart';
+import 'package:leaveflow/app/views/homepage.dart';
 
 class Verifyemail extends StatefulWidget {
   const Verifyemail({super.key});
@@ -22,10 +23,11 @@ class _VerifyemailState extends State<Verifyemail> {
 
   void sendverifylink() async {
     final now = DateTime.now();
-    if (_lastSent != null && now.difference(_lastSent!).inSeconds < 60) {
+    if (_lastSent != null && now.difference(_lastSent!).inSeconds < 120) {
       Get.snackbar(
         'Please wait',
-        'You can only resend the verification email once every minute.',
+        'You can only resend the verification email once every 2 minute.',
+        duration: const Duration(seconds: 15),
         margin: const EdgeInsets.all(30),
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -46,9 +48,11 @@ class _VerifyemailState extends State<Verifyemail> {
         'Please check your email for the verification link.',
         margin: const EdgeInsets.all(30),
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 15)
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to send verification email: $e');
+      Get.snackbar('Error', 'Failed to send verification email: $e',
+      duration: const Duration(seconds: 15));
     }
   }
 
@@ -58,14 +62,24 @@ class _VerifyemailState extends State<Verifyemail> {
       Get.offAll(() => const Wrapper());
       return;
     }
-    
+
     try {
       await user.reload();
-      if (mounted) {
-        Get.offAll(() => const Wrapper());
+      // get refreshed user instance
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+      if (refreshedUser != null && refreshedUser.emailVerified) {
+        // Email verified — navigate to home
+        Get.offAll(() => const Homepage());
+      } else {
+        Get.snackbar(
+          'Unverified Email',
+          'Email is still not verified. Please check your inbox.',
+          duration: const Duration(seconds: 15),
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to reload user: $e');
+      Get.snackbar('Error', 'Failed to reload user: $e', 
+      duration: const Duration(seconds: 15));
     }
   }
   
