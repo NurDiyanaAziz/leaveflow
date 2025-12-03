@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/homepage.dart';
+import 'package:leaveflow/app/views/login.screen.dart';
 // import 'package:leaveflow/app/widgets/navigationbar.widget.dart';
 
 class LoginController extends GetxController {
@@ -38,21 +39,66 @@ class LoginController extends GetxController {
       );
 
       if (credential.user != null) {
-        // Get ID token
-        final token = await credential.user!.getIdToken();
+        // Ensure latest user state (emailVerified may be updated)
+        await FirebaseAuth.instance.currentUser?.reload();
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (user == null) {
+          Get.snackbar('Error', 'User not found after sign-in.');
+          return;
+        }
+
+        log('User email: ${user.email}, emailVerified: ${user.emailVerified}');
         
-        // Store token and user info in SharedPrefs
-        await SharedPrefs.setLocalStorage('token', token ?? '');
-        await SharedPrefs.setLocalStorage('user', credential.user!.email ?? '');
+        if (user.emailVerified) {
+          // Get ID token
+          final token = await user.getIdToken();
 
-        // Clear controllers
-        emailController.clear();
-        passwordController.clear();
+          // Store token and user info in SharedPrefs
+          await SharedPrefs.setLocalStorage('token', token ?? '');
+          await SharedPrefs.setLocalStorage('user', user.email ?? '');
 
-        // Navigate to home
-        // Get.off(() => Navigationbar());
-        Get.off(() => Homepage());
-        Get.snackbar('Success', 'Login successful');
+          // Clear controllers
+          emailController.clear();
+          passwordController.clear();
+
+          // Navigate to home
+          Get.off(() => Homepage());
+          Get.snackbar('Success', 'Login successful');
+        } else {
+          // User not verified: attempt to send verification email (with cooldown)
+          try {
+            // Check cooldown stored in SharedPrefs
+            final lastSentIso = await SharedPrefs.getLocalStorage('last_verify_sent');
+            DateTime? lastSent;
+            if (lastSentIso != null && lastSentIso.isNotEmpty) {
+              lastSent = DateTime.tryParse(lastSentIso);
+            }
+
+            final now = DateTime.now();
+            final canSend = lastSent == null || now.difference(lastSent).inSeconds >= 60;
+
+            if (canSend) {
+              await user.sendEmailVerification();
+              await SharedPrefs.setLocalStorage('last_verify_sent', now.toIso8601String());
+              Get.snackbar('Verification Email Sent', 'Please check your email for the verification link.');
+            } else {
+              final DateTime last = lastSent;
+              final wait = 60 - now.difference(last).inSeconds;
+              Get.snackbar('Please wait', 'You can resend verification email in $wait seconds.');
+            }
+          } catch (e) {
+            Get.snackbar('Error', 'Failed to send verification email: $e');
+          }
+
+          // Sign the user out to prevent unverified access
+          await FirebaseAuth.instance.signOut();
+          await SharedPrefs.removeLocalStorage('token');
+          await SharedPrefs.removeLocalStorage('user');
+
+          // Send user back to login screen
+          Get.offAll(() => LoginScreen());
+        }
       }
     } on FirebaseAuthException catch (e) {
       log('Firebase Auth Error: ${e.code} - ${e.message}');
