@@ -24,4 +24,27 @@ class ApiServices {
 
     return response;
   }
+
+  // param different
+  Future<Response?> postJson(String path, Map<String, dynamic> data) async {
+    String? token = await SharedPrefs.getLocalStorage('token') ?? '';
+    String url = baseUrl + path;
+    
+    var headers = {
+      'accept': 'application/json',
+      'Content-Type': 'application/json', // Important for JSON payload
+    };
+
+    if (token.isNotEmpty) {
+      headers['authorization'] = 'Bearer $token';
+    }
+    
+    var response = await Dio().post(
+      url,
+      data: data, // Send the Map directly as JSON data
+      options: Options(headers: headers),
+    );
+
+    return response;
+  }
 }
