@@ -12,7 +12,7 @@ class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  var showPassword = false.obs;
+  var showPassword = true.obs;
 
   void togglePasswordView() {
     showPassword.value = !showPassword.value;
@@ -47,7 +47,7 @@ class LoginController extends GetxController {
           Get.snackbar(
             'Error',
             'User not found after sign-in.',
-            duration: const Duration(seconds: 15),
+            duration: const Duration(seconds: 5),
           );
           return;
         }
