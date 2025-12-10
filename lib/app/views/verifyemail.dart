@@ -24,7 +24,7 @@ class _VerifyemailState extends State<Verifyemail> {
 
   @override
   void initState() {
-    //sendverifylink(); // The email was sent during the signup process (the first request).
+    sendverifylink(); // The email was sent during the signup process (the first request).
     super.initState();
   }
 
