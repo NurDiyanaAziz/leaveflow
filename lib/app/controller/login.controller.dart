@@ -1,12 +1,12 @@
 import 'dart:developer';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
-import 'package:leaveflow/app/views/homepage.dart';
+//import 'package:leaveflow/app/views/homepage.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 // import 'package:leaveflow/app/widgets/navigationbar.widget.dart';
+import 'package:leaveflow/app/views/employee.screen.dart';
 
 class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
@@ -66,7 +66,10 @@ class LoginController extends GetxController {
           passwordController.clear();
 
           // Navigate to home
-          Get.off(() => Homepage());
+          //Get.off(() => Homepage());
+          // Navigate to employee screen
+          Get.off(() => const EmployeeScreen());
+          
           Get.snackbar('Success', 'Login successful');
         } else {
           // User not verified: attempt to send verification email (with cooldown)
@@ -137,4 +140,4 @@ class LoginController extends GetxController {
       );
     }
   }
-}
+}  
