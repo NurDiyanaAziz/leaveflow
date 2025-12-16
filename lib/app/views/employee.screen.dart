@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:leaveflow/app/views/login.screen.dart';
+import 'package:leaveflow/app/views/leave.balance.screen.dart';
+
 
 class EmployeeScreen extends StatefulWidget {
-  const EmployeeScreen({Key? key}) : super(key: key);
+  const EmployeeScreen({super.key});
 
   @override
   State<EmployeeScreen> createState() => _EmployeeScreenState();
@@ -66,8 +71,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     if (confirmed == true) {
       await FirebaseAuth.instance.signOut();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-      }
+      Get.offAll(() => LoginScreen());
+    }
     }
   }
 
@@ -182,6 +187,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -212,40 +218,66 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildLeaveBalance() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Leave Balance',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+ Widget _buildLeaveBalance() {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          // ignore: deprecated_member_use
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ADD THIS ROW WITH VIEW ALL BUTTON
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Leave Balance',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ...leaveBalance.map((leave) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildLeaveBalanceCard(leave),
-              )),
-        ],
-      ),
-    );
-  }
+            TextButton(
+              onPressed: () {
+                // Navigate to Leave Balance screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LeaveBalanceScreen(),
+                  ),
+                );
+              },
+              child: Text(
+                'View All',
+                style: TextStyle(
+                  color: Colors.blue[600],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...leaveBalance.map((leave) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildLeaveBalanceCard(leave),
+            )),
+      ],
+    ),
+  );
+}
 
   Widget _buildLeaveBalanceCard(Map<String, dynamic> leave) {
     final available = leave['available'] as int;
@@ -392,6 +424,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.08),
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -418,54 +451,40 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 
   Widget _buildRecentRequests() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          // ignore: deprecated_member_use
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start, 
+      children: [
+        const Text(
+          'Recent Requests',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Recent Requests',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'View All',
-                  style: TextStyle(
-                    color: Colors.blue[600],
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...recentRequests.map((request) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildRequestCard(request),
-              )),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 8),
+        ...recentRequests.map((request) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildRequestCard(request),
+            )),
+      ],
+    ),
+  );
+}
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
     final status = request['status'] as String;
@@ -567,6 +586,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
