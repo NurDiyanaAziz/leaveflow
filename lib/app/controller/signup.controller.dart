@@ -9,8 +9,9 @@ import 'package:leaveflow/app/views/wrapper.dart';
 class SignupController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final ApiServices api = ApiServices();
@@ -25,6 +26,7 @@ class SignupController extends GetxController {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 
@@ -69,15 +71,29 @@ class SignupController extends GetxController {
     return null;
   }
 
+  String? validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password.';
+    }
+    if (value != passwordController.text) {
+      return 'Passwords do not match.';
+    }
+    return null;
+  }
+
   void signUp() async {
-    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
-      return; // Stop if the form is not ready or validation fails
+    if (signupFormKey.currentState == null || !signupFormKey.currentState!.validate()) {
+      return; 
     }
 
     final String name = nameController.text.trim();
     final String email = emailController.text.trim();
 
+    print("--- SIGNUP STARTING ---"); // DEBUG LOG
+
     try {
+      // 1. Attempt Firebase Creation
+      print("1. Contacting Firebase...");
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(
             email: email,
@@ -87,13 +103,17 @@ class SignupController extends GetxController {
       User? user = userCredential.user;
 
       if (user != null) {
-        // 1. Update Firebase profile with the actual user's name
+        print("2. Firebase Success! UID: ${user.uid}");
+        
         await user.updateDisplayName(name);
+        // await user.sendEmailVerification(); // Comment this out for testing speed if you want
 
-        await user.sendEmailVerification();
-
-        // STEP B: MySQL Database Registration
-        // Use the new api.postJson method
+        // 2. Attempt MySQL Creation
+        print("3. Contacting MySQL Backend...");
+        
+        // Note: Make sure your ApiServices path starts with /users if your server.js uses /api
+        // Based on your code: url = baseUrl + path
+        // url = "http://10.0.2.2:3000/api" + "/users/register_mysql" 
         Response? response = await api.postJson('/users/register_mysql', {
           'uid': user.uid,
           'name': name,
@@ -101,46 +121,28 @@ class SignupController extends GetxController {
           'role': 'Employee',
         });
 
-        Get.back();
-
         if (response != null && response.statusCode == 201) {
-          // Success in both Firebase and MySQL
+          print("4. MySQL Success! Redirecting...");
           Get.offAll(() => const Wrapper());
         } else {
-          // CRITICAL ERROR: MySQL record failed. Clean up Firebase account.
-          // Check for a non-201 status code
-          String errorBody =
-              response?.data?.toString() ??
-              'Unknown error during MySQL registration.';
-          Get.snackbar(
-            'Setup Failed',
-            'Database setup failed. Error: $errorBody',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-          // Attempt to delete user from Firebase to prevent partial registration
+          // CRITICAL ERROR LOGGING
+          print("!!! MySQL FAILED !!!");
+          print("Status Code: ${response?.statusCode}");
+          print("Error Message: ${response?.data}");
+
+          Get.snackbar('Setup Failed', 'Database setup failed.');
+          
+          // Cleanup: Delete the Firebase user so we don't get stuck in "Zombie" mode
+          print("5. Cleaning up Firebase user...");
           await user.delete();
         }
       }
     } on FirebaseAuthException catch (e) {
-      // Display specific Firebase errors
-      Get.snackbar(
-        'Sign Up Error',
-        e.message ?? 'Authentication failed',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } on DioException catch (e) {
-      // Handle network or Dio specific errors
-      Get.snackbar(
-        'Network Error',
-        e.response?.data?.toString() ?? 'Cannot reach server.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      print("!!! FIREBASE ERROR !!!: ${e.code}"); // This will tell us if email is duplicate
+      Get.snackbar('Sign Up Error', e.message ?? 'Authentication failed');
     } catch (e) {
-      Get.snackbar(
-        'Sign Up Error',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      print("!!! UNKNOWN ERROR !!!: $e");
+      Get.snackbar('Error', e.toString());
     }
   }
 }

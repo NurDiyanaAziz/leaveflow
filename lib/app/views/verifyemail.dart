@@ -1,10 +1,12 @@
 import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leaveflow/app/services/api.service.dart'; // Import API
+import 'package:leaveflow/app/services/sharedprefs.dart'; // Import SharedPrefs
 import 'package:leaveflow/app/views/wrapper.dart';
-import 'package:leaveflow/app/views/homepage.dart';
+// import 'package:leaveflow/app/views/homepage.dart'; // Delete this line
+import 'package:leaveflow/app/views/employee.screen.dart'; // Import Employee Screen
 
 class Verifyemail extends StatefulWidget {
   const Verifyemail({super.key});
@@ -18,13 +20,14 @@ class _VerifyemailState extends State<Verifyemail> {
   Timer? _timer;
   bool _isTimerActive = false;
   int _countdown = 0;
-
-  //delay function to send verify link
   DateTime? _lastSent;
+
+  // 1. Create instance of API Service
+  final ApiServices api = ApiServices(); 
 
   @override
   void initState() {
-    sendverifylink(); // The email was sent during the signup process (the first request).
+    sendverifylink(); 
     super.initState();
   }
 
@@ -34,10 +37,8 @@ class _VerifyemailState extends State<Verifyemail> {
     super.dispose();
   }
 
-  //to start 2 minutes(120 seconds) timer for resend verify link
   void _startTimer() {
-    _timer?.cancel(); // stop any existing timer
-
+    _timer?.cancel(); 
     _countdown = 120;
     _isTimerActive = true;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -54,7 +55,6 @@ class _VerifyemailState extends State<Verifyemail> {
 
   void sendverifylink() async {
     final now = DateTime.now();
-    // if (_lastSent != null && now.difference(_lastSent!).inSeconds < 120) {
     if (_isTimerActive) {
       if (_lastSent != null && now.difference(_lastSent!).inSeconds < 120) {
         Get.snackbar(
@@ -86,14 +86,11 @@ class _VerifyemailState extends State<Verifyemail> {
         duration: const Duration(seconds: 5),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to send verification email: $e',
-        duration: const Duration(seconds: 5),
-      );
+      Get.snackbar('Error', 'Failed to send verification email: $e');
     }
   }
 
+  // --- UPDATED RELOAD FUNCTION ---
   void reload() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -103,11 +100,47 @@ class _VerifyemailState extends State<Verifyemail> {
 
     try {
       await user.reload();
-      // get refreshed user instance
       final refreshedUser = FirebaseAuth.instance.currentUser;
+
       if (refreshedUser != null && refreshedUser.emailVerified) {
-        // Email verified — navigate to home
-        Get.offAll(() => const Homepage());
+        // Email is verified! Now fetch the Role.
+        
+        // 1. Get Token & Save User Email (Just like Login)
+        final token = await refreshedUser.getIdToken();
+        await SharedPrefs.setLocalStorage('token', token ?? '');
+        await SharedPrefs.setLocalStorage('user', refreshedUser.email ?? '');
+
+        try {
+          // 2. Ask Backend for the ROLE
+          var response = await api.postJson('/users/login_details', {
+            'uid': refreshedUser.uid,
+          });
+
+          if (response != null && response.statusCode == 200) {
+             String role = response.data['role']; 
+             String name = response.data['name'];
+
+             // 3. Save Role Locally
+             await SharedPrefs.setLocalStorage('role', role);
+             await SharedPrefs.setLocalStorage('name', name);
+             await SharedPrefs.setLocalStorage('uid', refreshedUser.uid);
+
+             // 4. Navigate Correctly
+             if (role == 'Manager') {
+                // Get.offAll(() => const ManagerScreen());
+                Get.offAll(() => const EmployeeScreen()); 
+             } else {
+                Get.offAll(() => const EmployeeScreen());
+             }
+
+             Get.snackbar('Success', 'Email verified! Welcome, $name');
+          } else {
+             Get.snackbar("Error", "User verified but database profile missing.");
+          }
+        } catch (e) {
+           Get.snackbar("Connection Error", "Could not fetch user profile.");
+        }
+
       } else {
         Get.snackbar(
           'Unverified Email',
@@ -116,15 +149,10 @@ class _VerifyemailState extends State<Verifyemail> {
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to reload user: $e',
-        duration: const Duration(seconds: 5),
-      );
+      Get.snackbar('Error', 'Failed to reload user: $e');
     }
   }
 
-  //format seconds to mm:ss
   String formatCountdown(int seconds) {
     final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
     final remainingsecs = (seconds % 60).toString().padLeft(2, '0');
@@ -153,16 +181,16 @@ class _VerifyemailState extends State<Verifyemail> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
+              
               ElevatedButton(
-                onPressed: reload,
+                onPressed: reload, // Calls the updated function
                 child: const Text('Already Verified? Refresh'),
               ),
+              
               const SizedBox(height: 10),
-              //resend button with timer
               Column(
                 children: [
                   ElevatedButton(
-                    //disable button if timer is active
                     onPressed: _isTimerActive ? null : sendverifylink,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isTimerActive ? Colors.grey : Colors.green.shade400,
@@ -179,8 +207,7 @@ class _VerifyemailState extends State<Verifyemail> {
                       ),
                     )
                   else
-                    const Text('Resend available now',
-                        style: TextStyle(color: Colors.green))
+                    const Text('Resend available now', style: TextStyle(color: Colors.green))
                 ],
               ),
             ],

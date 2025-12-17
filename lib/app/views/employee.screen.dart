@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
+import 'package:leaveflow/app/services/sharedprefs.dart';
+import 'package:leaveflow/app/views/login.screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({Key? key}) : super(key: key);
@@ -45,6 +48,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
   // Logout function - same as homepage.dart
   void signout() async {
+    // 1. Show Confirmation Dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -64,10 +68,20 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
 
     if (confirmed == true) {
+      // 2. Sign out from Firebase
       await FirebaseAuth.instance.signOut();
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-      }
+
+      // 3. CRITICAL: Clear Local Storage
+      // If you don't do this, the app might auto-login again
+      await SharedPrefs.removeLocalStorage('token');
+      await SharedPrefs.removeLocalStorage('role');
+      await SharedPrefs.removeLocalStorage('name');
+      await SharedPrefs.removeLocalStorage('uid');
+      await SharedPrefs.removeLocalStorage('user');
+
+      // 4. Navigate back to Login using GetX
+      // This clears the navigation stack so they can't go back
+      Get.offAll(() => LoginScreen());
     }
   }
 
