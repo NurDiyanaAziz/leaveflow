@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leaveflow/app/services/api.service.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 //import 'package:leaveflow/app/views/homepage.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
@@ -61,16 +62,46 @@ class LoginController extends GetxController {
           await SharedPrefs.setLocalStorage('token', token ?? '');
           await SharedPrefs.setLocalStorage('user', user.email ?? '');
 
-          // Clear controllers
-          emailController.clear();
-          passwordController.clear();
+          try {
+            print("Fetching user role from MySQL...");
+            
+            var response = await api.postJson('/users/login_details', {
+              'uid': user.uid,
+            });
 
-          // Navigate to home
-          //Get.off(() => Homepage());
-          // Navigate to employee screen
-          Get.off(() => const EmployeeScreen());
-          
-          Get.snackbar('Success', 'Login successful');
+            if (response != null && response.statusCode == 200) {
+              // 1. Extract Role & Name from Database
+              String role = response.data['role']; // "Manager" or "Employee"
+              String name = response.data['name'];
+
+              // 2. Save to Local Storage for usage in other screens
+              await SharedPrefs.setLocalStorage('role', role);
+              await SharedPrefs.setLocalStorage('name', name);
+              await SharedPrefs.setLocalStorage('uid', user.uid);
+
+              // 3. Clear controllers
+              emailController.clear();
+              passwordController.clear();
+
+              // 4. Navigate based on Role
+              Get.snackbar('Success', 'Welcome back, $name ($role)');
+
+              if (role == 'Manager') {
+                // TODO: Point this to ManagerScreen() when you build it
+                // Get.off(() => const ManagerScreen()); 
+                Get.off(() => const EmployeeScreen()); // For now, use EmployeeScreen
+              } else {
+                Get.off(() => const EmployeeScreen());
+              }
+            } else {
+               // Critical Error: User exists in Firebase but NOT in MySQL
+               Get.snackbar("Database Error", "User profile not found in database.");
+               FirebaseAuth.instance.signOut(); 
+            }
+          } catch (e) {
+            print("API Error: $e");
+            Get.snackbar("Connection Error", "Could not connect to server.");
+          }
         } else {
           // User not verified: attempt to send verification email (with cooldown)
           try {
