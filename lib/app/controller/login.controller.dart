@@ -31,6 +31,15 @@ class LoginController extends GetxController {
     showPassword.value = !showPassword.value;
   }
 
+  Future<void> clearSession() async {
+    await FirebaseAuth.instance.signOut();
+    await SharedPrefs.removeLocalStorage('token');
+    await SharedPrefs.removeLocalStorage('user');
+    await SharedPrefs.removeLocalStorage('role'); // Added
+    await SharedPrefs.removeLocalStorage('name'); // Added
+    await SharedPrefs.removeLocalStorage('uid');  // Added
+  }
+
   void onLogin() async {
     try {
       // Sign in with Firebase
@@ -64,6 +73,11 @@ class LoginController extends GetxController {
 
           try {
             print("Fetching user role from MySQL...");
+
+            print("--------------------------------------------------");
+            print("LOGGING IN...");
+            print("Flutter sends UID: ${user.uid}"); 
+            print("--------------------------------------------------");
             
             var response = await api.postJson('/users/login_details', {
               'uid': user.uid,
@@ -95,8 +109,8 @@ class LoginController extends GetxController {
               }
             } else {
                // Critical Error: User exists in Firebase but NOT in MySQL
-               Get.snackbar("Database Error", "User profile not found in database.");
-               FirebaseAuth.instance.signOut(); 
+               Get.snackbar("Database Error", "User profile not found in database."); 
+               await clearSession();
             }
           } catch (e) {
             print("API Error: $e");
@@ -147,9 +161,7 @@ class LoginController extends GetxController {
           }
 
           // Sign the user out to prevent unverified access
-          await FirebaseAuth.instance.signOut();
-          await SharedPrefs.removeLocalStorage('token');
-          await SharedPrefs.removeLocalStorage('user');
+          await clearSession();
 
           // Send user back to login screen
           Get.offAll(() => LoginScreen());
