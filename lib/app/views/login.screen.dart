@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/controller/login.controller.dart';
-import 'package:leaveflow/app/views/forgot_password.dart';
 import 'package:leaveflow/app/views/signup.dart';
 // import 'package:leaveflow/app/views/forgot_password.dart';
 // import 'package:leaveflow/app/views/signup.dart';
@@ -90,7 +89,7 @@ class LoginScreen extends StatelessWidget {
                     const Text(
                       'Welcome Back!',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -179,7 +178,11 @@ class LoginScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                          onPressed: (() => Get.to(() => const Signup())),
+                          onPressed: () {
+                            controller.clearForm(); // ✅ clear inputs
+                            Get.to(() => const Signup());
+                          },
+                          // onPressed: (() => Get.to(() => const Signup())),
                           child: const Text(
                             "Register Now!",
                             style: TextStyle(
@@ -189,8 +192,11 @@ class LoginScreen extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: (() =>
-                              Get.to(() => const ForgotPassword())),
+                          onPressed: () {
+                            controller.clearForm(); // ✅ clear inputs
+                            Get.to(() => const Signup());
+                          },
+                          // onPressed: (() => Get.to(() => const ForgotPassword())),
                           child: const Text(
                             "Forgot Password?",
                             style: TextStyle(

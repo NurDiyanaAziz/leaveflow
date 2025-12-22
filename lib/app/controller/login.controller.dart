@@ -3,9 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
-//import 'package:leaveflow/app/views/homepage.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
-// import 'package:leaveflow/app/widgets/navigationbar.widget.dart';
 import 'package:leaveflow/app/views/employee.screen.dart';
 
 class LoginController extends GetxController {
@@ -25,10 +23,11 @@ class LoginController extends GetxController {
     super.onClose();
   }
 
-  //ShowPassword function
-  void showPasswordFunction() {
-    showPassword.value = !showPassword.value;
-  }
+void clearForm() {
+  emailController.clear();
+  passwordController.clear();
+}
+
 
   void onLogin() async {
     try {

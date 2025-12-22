@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
+// import 'package:leaveflow/app/views/employee.screen.dart';
 import 'package:leaveflow/app/views/wrapper.dart';
 
 Future<void> main() async {
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
       home: Wrapper(),
+      // home: EmployeeScreen(),
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/route_manager.dart';
+import 'package:leaveflow/app/views/employee_new_request.dart';
 
 class EmployeeScreen extends StatefulWidget {
-  const EmployeeScreen({Key? key}) : super(key: key);
+  const EmployeeScreen({super.key});
 
   @override
   State<EmployeeScreen> createState() => _EmployeeScreenState();
@@ -354,6 +356,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             Colors.blue[700]!,
             Colors.white,
             onTap: () {
+              Get.to( () => const NewLeavesRequestScreen());
               // Navigate to New Request screen
               // Navigator.push(context, MaterialPageRoute(builder: (context) => NewRequestScreen()));
             },

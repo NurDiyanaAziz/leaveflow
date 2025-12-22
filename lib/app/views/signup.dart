@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/controller/signup.controller.dart';
@@ -12,7 +11,7 @@ class Signup extends StatefulWidget {
 
 class _SignupState extends State<Signup> {
   final SignupController controller = Get.put(SignupController());
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  // final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +89,23 @@ class _SignupState extends State<Signup> {
                 ),
                 //form fields
                 child: Form(
-                  key: _formKey,
+                  key: controller.formKey,
                   child: Column(
                     children: [
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Create Your Account!',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       TextFormField(
                         controller: controller.nameController,
                         decoration: InputDecoration(
                           hintText: 'Enter Full Name',
-                          labelText: 'Full Name',
                           filled: true,
                           fillColor: Colors.grey[200],
                           border: OutlineInputBorder(
@@ -112,11 +120,11 @@ class _SignupState extends State<Signup> {
                         keyboardType: TextInputType.name,
                         validator: controller.validateName,
                       ),
+                      const SizedBox(height: 20),
                       TextFormField(
                         controller: controller.emailController,
                         decoration: InputDecoration(
                           hintText: 'Enter Email',
-                          labelText: 'Email',
                           filled: true,
                           fillColor: Colors.grey[200],
                           border: OutlineInputBorder(
@@ -131,34 +139,37 @@ class _SignupState extends State<Signup> {
                         keyboardType: TextInputType.emailAddress,
                         validator: controller.validateEmail,
                       ),
-                      TextFormField(
-                        controller: controller.passwordController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter Password',
-                          labelText: 'Password',
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                            horizontal: 15,
-                          ),
-                          suffixIcon: IconButton(
-                            onPressed: controller.togglePasswordView,
-                            icon: Icon(
-                              controller.showPassword.value
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.grey[600],
+                      const SizedBox(height: 20),
+                      Obx(
+                        () => TextFormField(
+                          controller: controller.passwordController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter Password',
+                            filled: true,
+                            fillColor: Colors.grey[200],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                              horizontal: 15,
+                            ),
+                            suffixIcon: IconButton(
+                              onPressed: controller.togglePasswordView,
+                              icon: Icon(
+                                controller.showPassword.value
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ),
+                          obscureText: !controller.showPassword.value,
+                          keyboardType: TextInputType.visiblePassword,
+                          validator: controller
+                              .validatePassword, // Apply strong validation
                         ),
-                        obscureText: !controller.showPassword.value,
-                        validator: controller
-                            .validatePassword, // Apply strong validation
                       ),
                       const SizedBox(height: 30),
                       //signup button
