@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/wrapper.dart';
+import 'package:leaveflow/app/views/login.screen.dart';
+import 'package:leaveflow/app/views/manager.screen.dart';
+import 'package:leaveflow/app/views/employee.screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'LeaveFlow App',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -37,6 +41,11 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
+      getPages: [
+        GetPage(name: '/login', page: () => LoginScreen()),
+        GetPage(name: '/manager', page: () => const ManagerScreen()),
+        GetPage(name: '/employee', page: () => const EmployeeScreen()),
+      ],
       home: Wrapper(),
     );
   }

@@ -8,6 +8,7 @@ import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 // import 'package:leaveflow/app/widgets/navigationbar.widget.dart';
 import 'package:leaveflow/app/views/employee.screen.dart';
+import 'package:leaveflow/app/views/manager.screen.dart';
 
 class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
@@ -29,6 +30,15 @@ class LoginController extends GetxController {
   //ShowPassword function
   void showPasswordFunction() {
     showPassword.value = !showPassword.value;
+  }
+
+  Future<void> clearSession() async {
+    await FirebaseAuth.instance.signOut();
+    await SharedPrefs.removeLocalStorage('token');
+    await SharedPrefs.removeLocalStorage('user');
+    await SharedPrefs.removeLocalStorage('role');
+    await SharedPrefs.removeLocalStorage('name');
+    await SharedPrefs.removeLocalStorage('uid');
   }
 
   void onLogin() async {
@@ -64,7 +74,7 @@ class LoginController extends GetxController {
 
           try {
             print("Fetching user role from MySQL...");
-            
+
             var response = await api.postJson('/users/login_details', {
               'uid': user.uid,
             });
@@ -87,19 +97,23 @@ class LoginController extends GetxController {
               Get.snackbar('Success', 'Welcome back, $name ($role)');
 
               if (role == 'Manager') {
-                // TODO: Point this to ManagerScreen() when you build it
-                // Get.off(() => const ManagerScreen()); 
-                Get.off(() => const EmployeeScreen()); // For now, use EmployeeScreen
+                print("Navigating to Manager Screen...");
+                Get.offAll(() => const ManagerScreen());
               } else {
-                Get.off(() => const EmployeeScreen());
+                print("Navigating to Employee Screen...");
+                Get.offAll(() => const EmployeeScreen());
               }
             } else {
-               // Critical Error: User exists in Firebase but NOT in MySQL
-               Get.snackbar("Database Error", "User profile not found in database.");
-               FirebaseAuth.instance.signOut(); 
+              // Critical Error: User exists in Firebase but NOT in MySQL
+              Get.snackbar(
+                "Database Error",
+                "User profile not found in database.",
+              );
+              await clearSession();
             }
           } catch (e) {
             print("API Error: $e");
+            await clearSession();
             Get.snackbar("Connection Error", "Could not connect to server.");
           }
         } else {
@@ -171,4 +185,4 @@ class LoginController extends GetxController {
       );
     }
   }
-}  
+}

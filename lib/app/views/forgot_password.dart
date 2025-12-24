@@ -44,7 +44,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text('Forgot Password'),
-        
+
         centerTitle: true,
       ),
       body: SafeArea(

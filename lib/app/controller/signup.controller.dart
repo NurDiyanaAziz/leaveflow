@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +8,8 @@ import 'package:leaveflow/app/views/wrapper.dart';
 class SignupController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 
@@ -29,7 +29,6 @@ class SignupController extends GetxController {
     confirmPasswordController.dispose();
     super.onClose();
   }
-
 
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
@@ -82,8 +81,9 @@ class SignupController extends GetxController {
   }
 
   void signUp() async {
-    if (signupFormKey.currentState == null || !signupFormKey.currentState!.validate()) {
-      return; 
+    if (signupFormKey.currentState == null ||
+        !signupFormKey.currentState!.validate()) {
+      return;
     }
 
     final String name = nameController.text.trim();
@@ -104,16 +104,16 @@ class SignupController extends GetxController {
 
       if (user != null) {
         print("2. Firebase Success! UID: ${user.uid}");
-        
+
         await user.updateDisplayName(name);
         // await user.sendEmailVerification(); // Comment this out for testing speed if you want
 
         // 2. Attempt MySQL Creation
         print("3. Contacting MySQL Backend...");
-        
+
         // Note: Make sure your ApiServices path starts with /users if your server.js uses /api
         // Based on your code: url = baseUrl + path
-        // url = "http://10.0.2.2:3000/api" + "/users/register_mysql" 
+        // url = "http://10.0.2.2:3000/api" + "/users/register_mysql"
         Response? response = await api.postJson('/users/register_mysql', {
           'uid': user.uid,
           'name': name,
@@ -131,14 +131,16 @@ class SignupController extends GetxController {
           print("Error Message: ${response?.data}");
 
           Get.snackbar('Setup Failed', 'Database setup failed.');
-          
+
           // Cleanup: Delete the Firebase user so we don't get stuck in "Zombie" mode
           print("5. Cleaning up Firebase user...");
           await user.delete();
         }
       }
     } on FirebaseAuthException catch (e) {
-      print("!!! FIREBASE ERROR !!!: ${e.code}"); // This will tell us if email is duplicate
+      print(
+        "!!! FIREBASE ERROR !!!: ${e.code}",
+      ); // This will tell us if email is duplicate
       Get.snackbar('Sign Up Error', e.message ?? 'Authentication failed');
     } catch (e) {
       print("!!! UNKNOWN ERROR !!!: $e");

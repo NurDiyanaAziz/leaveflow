@@ -19,5 +19,4 @@ class SharedPrefs {
   static Future removeLocalStorage(String key) async {
     await prefs?.remove(key);
   }
-
 }

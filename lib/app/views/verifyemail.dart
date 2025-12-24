@@ -23,11 +23,11 @@ class _VerifyemailState extends State<Verifyemail> {
   DateTime? _lastSent;
 
   // 1. Create instance of API Service
-  final ApiServices api = ApiServices(); 
+  final ApiServices api = ApiServices();
 
   @override
   void initState() {
-    sendverifylink(); 
+    sendverifylink();
     super.initState();
   }
 
@@ -38,7 +38,7 @@ class _VerifyemailState extends State<Verifyemail> {
   }
 
   void _startTimer() {
-    _timer?.cancel(); 
+    _timer?.cancel();
     _countdown = 120;
     _isTimerActive = true;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -104,7 +104,7 @@ class _VerifyemailState extends State<Verifyemail> {
 
       if (refreshedUser != null && refreshedUser.emailVerified) {
         // Email is verified! Now fetch the Role.
-        
+
         // 1. Get Token & Save User Email (Just like Login)
         final token = await refreshedUser.getIdToken();
         await SharedPrefs.setLocalStorage('token', token ?? '');
@@ -117,30 +117,32 @@ class _VerifyemailState extends State<Verifyemail> {
           });
 
           if (response != null && response.statusCode == 200) {
-             String role = response.data['role']; 
-             String name = response.data['name'];
+            String role = response.data['role'];
+            String name = response.data['name'];
 
-             // 3. Save Role Locally
-             await SharedPrefs.setLocalStorage('role', role);
-             await SharedPrefs.setLocalStorage('name', name);
-             await SharedPrefs.setLocalStorage('uid', refreshedUser.uid);
+            // 3. Save Role Locally
+            await SharedPrefs.setLocalStorage('role', role);
+            await SharedPrefs.setLocalStorage('name', name);
+            await SharedPrefs.setLocalStorage('uid', refreshedUser.uid);
 
-             // 4. Navigate Correctly
-             if (role == 'Manager') {
-                // Get.offAll(() => const ManagerScreen());
-                Get.offAll(() => const EmployeeScreen()); 
-             } else {
-                Get.offAll(() => const EmployeeScreen());
-             }
+            // 4. Navigate Correctly
+            if (role == 'Manager') {
+              // Get.offAll(() => const ManagerScreen());
+              Get.offAll(() => const EmployeeScreen());
+            } else {
+              Get.offAll(() => const EmployeeScreen());
+            }
 
-             Get.snackbar('Success', 'Email verified! Welcome, $name');
+            Get.snackbar('Success', 'Email verified! Welcome, $name');
           } else {
-             Get.snackbar("Error", "User verified but database profile missing.");
+            Get.snackbar(
+              "Error",
+              "User verified but database profile missing.",
+            );
           }
         } catch (e) {
-           Get.snackbar("Connection Error", "Could not fetch user profile.");
+          Get.snackbar("Connection Error", "Could not fetch user profile.");
         }
-
       } else {
         Get.snackbar(
           'Unverified Email',
@@ -181,19 +183,21 @@ class _VerifyemailState extends State<Verifyemail> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              
+
               ElevatedButton(
                 onPressed: reload, // Calls the updated function
                 child: const Text('Already Verified? Refresh'),
               ),
-              
+
               const SizedBox(height: 10),
               Column(
                 children: [
                   ElevatedButton(
                     onPressed: _isTimerActive ? null : sendverifylink,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isTimerActive ? Colors.grey : Colors.green.shade400,
+                      backgroundColor: _isTimerActive
+                          ? Colors.grey
+                          : Colors.green.shade400,
                     ),
                     child: const Text('Resend Verification Email'),
                   ),
@@ -207,7 +211,10 @@ class _VerifyemailState extends State<Verifyemail> {
                       ),
                     )
                   else
-                    const Text('Resend available now', style: TextStyle(color: Colors.green))
+                    const Text(
+                      'Resend available now',
+                      style: TextStyle(color: Colors.green),
+                    ),
                 ],
               ),
             ],

@@ -99,11 +99,14 @@ class _SignupState extends State<Signup> {
                           ),
                         ),
                         const SizedBox(height: 20),
-              
+
                         // --- 1. FULL NAME ---
                         const Text(
                           "Full Name",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -113,11 +116,14 @@ class _SignupState extends State<Signup> {
                           validator: controller.validateName,
                         ),
                         const SizedBox(height: 20),
-              
+
                         // --- 2. EMAIL ---
                         const Text(
                           "Email Address",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -127,53 +133,71 @@ class _SignupState extends State<Signup> {
                           validator: controller.validateEmail,
                         ),
                         const SizedBox(height: 20),
-              
+
                         // --- 3. PASSWORD ---
                         const Text(
                           "Password",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Obx(() => TextFormField(
-                          controller: controller.passwordController,
-                          decoration: _inputDecoration('Enter strong password').copyWith(
-                            suffixIcon: IconButton(
-                              onPressed: controller.togglePasswordView,
-                              icon: Icon(
-                                controller.showPassword.value
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: Colors.grey[600],
-                              ),
-                            ),
+                        Obx(
+                          () => TextFormField(
+                            controller: controller.passwordController,
+                            decoration:
+                                _inputDecoration(
+                                  'Enter strong password',
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    onPressed: controller.togglePasswordView,
+                                    icon: Icon(
+                                      controller.showPassword.value
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                            obscureText: !controller.showPassword.value,
+                            validator: controller.validatePassword,
                           ),
-                          obscureText: !controller.showPassword.value,
-                          validator: controller.validatePassword,
-                        )),
+                        ),
                         const SizedBox(height: 20),
-              
+
                         // --- 4. CONFIRM PASSWORD (NEW) ---
                         const Text(
                           "Confirm Password",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Obx(() => TextFormField(
-                          controller: controller.confirmPasswordController,
-                          decoration: _inputDecoration('Re-enter password'),
-                          // It shares the same visibility toggle as the main password
-                          obscureText: !controller.showPassword.value, 
-                          validator: controller.validateConfirmPassword,
-                        )),
+                        Obx(
+                          () => TextFormField(
+                            controller: controller.confirmPasswordController,
+                            decoration: _inputDecoration('Re-enter password'),
+                            // It shares the same visibility toggle as the main password
+                            obscureText: !controller.showPassword.value,
+                            validator: controller.validateConfirmPassword,
+                          ),
+                        ),
                         const SizedBox(height: 40),
-              
+
                         // --- BUTTONS ---
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: controller.signUp,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(255, 0, 78, 150),
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                0,
+                                78,
+                                150,
+                              ),
                               padding: const EdgeInsets.symmetric(vertical: 15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -181,12 +205,15 @@ class _SignupState extends State<Signup> {
                             ),
                             child: const Text(
                               'Create Account',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 15),
-              
+
                         Center(
                           child: TextButton(
                             onPressed: () => Get.back(),
@@ -222,10 +249,7 @@ class _SignupState extends State<Signup> {
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 15,
-        horizontal: 15,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
     );
   }
 }

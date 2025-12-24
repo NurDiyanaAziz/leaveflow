@@ -14,7 +14,7 @@ class EmployeeScreen extends StatefulWidget {
 class _EmployeeScreenState extends State<EmployeeScreen> {
   // Get current user - same approach as homepage.dart
   final user = FirebaseAuth.instance.currentUser;
-  
+
   // Sample data - this will come from your API later
   final List<Map<String, dynamic>> leaveBalance = [
     {'type': 'Annual Leave', 'available': 12, 'used': 3, 'total': 15},
@@ -28,21 +28,21 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       'type': 'Annual Leave',
       'dates': 'Dec 20-22, 2025',
       'days': 3,
-      'status': 'Pending'
+      'status': 'Pending',
     },
     {
       'id': 2,
       'type': 'Sick Leave',
       'dates': 'Nov 15, 2025',
       'days': 1,
-      'status': 'Approved'
+      'status': 'Approved',
     },
     {
       'id': 3,
       'type': 'Annual Leave',
       'dates': 'Oct 10-12, 2025',
       'days': 3,
-      'status': 'Approved'
+      'status': 'Approved',
     },
   ];
 
@@ -108,7 +108,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: Colors.black87,
+            ),
             onPressed: () {
               // Open notifications
             },
@@ -216,10 +219,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           const SizedBox(height: 4),
           Text(
             'Manage your leave requests and balance',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -252,10 +252,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ...leaveBalance.map((leave) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildLeaveBalanceCard(leave),
-              )),
+          ...leaveBalance.map(
+            (leave) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildLeaveBalanceCard(leave),
+            ),
+          ),
         ],
       ),
     );
@@ -288,10 +290,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               ),
               Text(
                 '$total days total',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -311,10 +310,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                     ),
                     TextSpan(
                       text: ' available',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
                     ),
                   ],
                 ),
@@ -333,10 +329,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                     ),
                     TextSpan(
                       text: ' used',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
                     ),
                   ],
                 ),
@@ -472,10 +465,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ...recentRequests.map((request) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildRequestCard(request),
-              )),
+          ...recentRequests.map(
+            (request) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildRequestCard(request),
+            ),
+          ),
         ],
       ),
     );
@@ -518,8 +513,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined,
-                              size: 14, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             request['dates'],
@@ -534,12 +532,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isPending
-                        ? Colors.yellow[100]
-                        : Colors.green[100],
+                    color: isPending ? Colors.yellow[100] : Colors.green[100],
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -547,9 +545,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isPending
-                          ? Colors.yellow[800]
-                          : Colors.green[800],
+                      color: isPending ? Colors.yellow[800] : Colors.green[800],
                     ),
                   ),
                 ),
@@ -562,10 +558,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 const SizedBox(width: 4),
                 Text(
                   '${request['days']} day${request['days'] > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
               ],
             ),

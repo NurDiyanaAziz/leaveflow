@@ -8,8 +8,7 @@ class Navigationbar extends StatefulWidget {
 }
 
 class _NavigationbarState extends State<Navigationbar> {
-int currentPageInd = 0; //starting page
-
+  int currentPageInd = 0; //starting page
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +17,7 @@ int currentPageInd = 0; //starting page
         //HomeScreen(),
       ][currentPageInd],
       bottomNavigationBar: NavigationBar(
-        onDestinationSelected: (int index){
+        onDestinationSelected: (int index) {
           setState(() {
             currentPageInd = index;
           });
@@ -27,22 +26,22 @@ int currentPageInd = 0; //starting page
         selectedIndex: currentPageInd,
         destinations: const <Widget>[
           NavigationDestination(
-            selectedIcon: Icon(Icons.home, color: Colors.white,),
-            icon: Icon(Icons.home_outlined), 
-            label: 'Home'
-            ),
-            NavigationDestination(
-            selectedIcon: Icon(Icons.contacts, color: Colors.white,),
-            icon: Icon(Icons.contacts_outlined), 
-            label: 'Contacts'
-            ),
-            NavigationDestination(
-            selectedIcon: Icon(Icons.article, color: Colors.white,),
-            icon: Icon(Icons.article_outlined), 
-            label: 'Reports'
-            ),
-        ]
-      ),//define bottom nav bar
+            selectedIcon: Icon(Icons.home, color: Colors.white),
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.contacts, color: Colors.white),
+            icon: Icon(Icons.contacts_outlined),
+            label: 'Contacts',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.article, color: Colors.white),
+            icon: Icon(Icons.article_outlined),
+            label: 'Reports',
+          ),
+        ],
+      ), //define bottom nav bar
     );
   }
 }

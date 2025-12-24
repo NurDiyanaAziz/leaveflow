@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:leaveflow/app/views/homepage.dart';
+import 'package:leaveflow/app/services/sharedprefs.dart';
+import 'package:leaveflow/app/views/employee.screen.dart';
+import 'package:leaveflow/app/views/manager.screen.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/verifyemail.dart';
 
@@ -12,7 +14,6 @@ class Wrapper extends StatefulWidget {
 }
 
 class _WrapperState extends State<Wrapper> {
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +23,23 @@ class _WrapperState extends State<Wrapper> {
           if (snapshot.hasData) {
             //if snapshot got data it will redirect to home screen
             if (snapshot.data!.emailVerified) {
-              return Homepage(); //home screen
+              return FutureBuilder(
+                future: SharedPrefs.getLocalStorage('role'),
+                builder: (context, roleSnapshot) {
+                  if (roleSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (roleSnapshot.data == 'Manager') {
+                    return const ManagerScreen(); // Redirect to your Manager UI
+                  } else if (roleSnapshot.data == 'Employee') {
+                    return const EmployeeScreen(); // Redirect to Employee UI
+                  } else {
+                    // Fallback if role isn't found yet
+                    return const Center(child: Text("Loading Profile..."));
+                  }
+                },
+              );
             } else {
               return Verifyemail();
             }

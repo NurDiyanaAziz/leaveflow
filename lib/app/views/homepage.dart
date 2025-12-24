@@ -11,10 +11,8 @@ class Homepage extends StatefulWidget {
   State<Homepage> createState() => _HomepageState();
 }
 
-
 class _HomepageState extends State<Homepage> {
-
-//to get all the details of the current user login
+  //to get all the details of the current user login
   final user = FirebaseAuth.instance.currentUser;
 
   void signout() async {
@@ -44,13 +42,10 @@ class _HomepageState extends State<Homepage> {
       );
     }
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Homepage'),
-      ),
-      body: Center(child: Text('${user!.email}'),
-      ),
+      appBar: AppBar(title: const Text('Homepage')),
+      body: Center(child: Text('${user!.email}')),
       floatingActionButton: FloatingActionButton(
-        onPressed: (()=>signout()),
+        onPressed: (() => signout()),
         child: const Icon(Icons.logout),
       ),
     );
