@@ -75,6 +75,11 @@ class LoginController extends GetxController {
           try {
             print("Fetching user role from MySQL...");
 
+            print("--------------------------------------------------");
+            print("LOGGING IN...");
+            print("Flutter sends UID: ${user.uid}"); 
+            print("--------------------------------------------------");
+            
             var response = await api.postJson('/users/login_details', {
               'uid': user.uid,
             });
@@ -161,9 +166,7 @@ class LoginController extends GetxController {
           }
 
           // Sign the user out to prevent unverified access
-          await FirebaseAuth.instance.signOut();
-          await SharedPrefs.removeLocalStorage('token');
-          await SharedPrefs.removeLocalStorage('user');
+          await clearSession();
 
           // Send user back to login screen
           Get.offAll(() => LoginScreen());
