@@ -43,6 +43,7 @@ class ManagerLeaveController extends GetxController {
   Future<void> _fetchHistory() async {
     try {
       final response = await api.getDio('/manager/requests/history');
+      debugPrint("History Data: ${response?.data}");
       if (response != null && response.statusCode == 200) {
         historyRequests.assignAll(response.data['requests'] ?? []);
       }
@@ -52,7 +53,7 @@ class ManagerLeaveController extends GetxController {
   }
 
   // Update request status (Approve/Reject)
-  Future<bool> updateRequestStatus(dynamic requestId, String action) async {
+  Future<bool> updateRequestStatus(dynamic requestId, String action, String remarks) async {
     try {
       debugPrint("--- CONTROLLER: Received request for ID: $requestId ---");
 
@@ -67,6 +68,7 @@ class ManagerLeaveController extends GetxController {
 
       final response = await api.putDio('/manager/request/$id', {
         'action': apiAction,
+        'remarks': remarks,
       });
 
       if (response != null && response.statusCode == 200) {

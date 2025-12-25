@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:leaveflow/app/services/api.service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../controller/manager_leave.controller.dart';
 
 class ManagerLeaveDetails extends StatelessWidget {
@@ -12,8 +14,42 @@ class ManagerLeaveDetails extends StatelessWidget {
 
   ManagerLeaveDetails({super.key, required this.request});
 
+  // Function to open the attachment URL
+  Future<void> _openFile(String? fileName) async {
+    if (fileName == null || fileName.isEmpty || fileName == "null") {
+      Get.snackbar("Error", "No valid file found", 
+          snackPosition: SnackPosition.TOP, backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+    String fullUrl;
+    if (fileName.startsWith('http')) {
+    fullUrl = fileName; 
+    } else { 
+
+    String apiBase = api.baseUrl;
+    String fileBase = apiBase.replaceAll('/api', '');
+    fullUrl = "$fileBase/uploads/$fileName";
+    debugPrint("--- Attempting to open file: $fullUrl ---");
+    }
+
+    final Uri uri = Uri.parse(fullUrl);
+    try{
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar("Error", "Could not reach server at $fullUrl",
+          snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange, colorText: Colors.white);
+    }
+  } catch(e) {
+    debugPrint("Launch Error: $e");
+  }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (remarksController.text.isEmpty && request['manager_remarks'] != null){
+      remarksController.text = request['manager_remarks'].toString();
+    }
     // Handle status for coloring and logic
     final String status = (request['status'] ?? 'pending')
         .toString()
@@ -69,7 +105,10 @@ class ManagerLeaveDetails extends StatelessWidget {
               ],
             ),
 
-            _infoTile("Supporting Document", "No file attached"),
+            _attachmentTile(
+              label: "Supporting Document",
+              filePath: request['attachment_url']?.toString(),
+            ),
 
             const SizedBox(height: 20),
             // Show Action Buttons only if status is PENDING
@@ -159,9 +198,12 @@ class ManagerLeaveDetails extends StatelessWidget {
               debugPrint(
                 "--- UI: Attempting to update request_id: ${request['request_id']} ---",
               );
+              String managerRemarks = remarksController.text.trim();
+
               bool success = await controller.updateRequestStatus(
                 request['request_id'],
                 action,
+                managerRemarks,
               );
               debugPrint("--- UI: Success Signal received: $success ---");
 
@@ -205,6 +247,44 @@ class ManagerLeaveDetails extends StatelessWidget {
   }
 
   // UI Components
+
+  Widget _attachmentTile({required String label, String? filePath}) {
+    bool hasFile = filePath != null && filePath.isNotEmpty && filePath != "null";
+    
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(
+                  hasFile ? filePath.split('/').last : "No file attached",
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.black87),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (hasFile)
+            IconButton(
+              icon: const Icon(Icons.remove_red_eye, color: Color(0xFF1A56BE)),
+              onPressed: () => _openFile(filePath), // Opens the URL
+            ),
+        ],
+      ),
+    );
+  }
 
   Widget _sectionHeader(String title) {
     return Padding(
