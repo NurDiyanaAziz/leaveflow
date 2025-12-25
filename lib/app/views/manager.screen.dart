@@ -271,7 +271,7 @@ class _ManagerScreenState extends State<ManagerScreen> {
               TextButton(
                 onPressed: () => Get.back(),
                 child: const Text(
-                  "Cancel",
+                  "Cancel", 
                   style: TextStyle(
                     color: Colors.deepPurpleAccent,
                     fontWeight: FontWeight.w600,
@@ -311,7 +311,7 @@ class _ManagerScreenState extends State<ManagerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

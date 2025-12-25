@@ -173,7 +173,7 @@ class ManagerLeaveDetails extends StatelessWidget {
                   "Success",
                   "Request ${action}ed successfully",
                   snackPosition: SnackPosition.TOP,
-                  backgroundColor: Colors.green.withOpacity(0.9),
+                  backgroundColor: Colors.green.withValues(alpha:0.9),
                   colorText: Colors.white,
                   icon: const Icon(Icons.check_circle, color: Colors.white),
                   duration: const Duration(seconds: 2),
@@ -257,9 +257,9 @@ class ManagerLeaveDetails extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: .3)),
       ),
       child: Column(
         children: [
