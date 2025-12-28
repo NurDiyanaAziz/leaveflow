@@ -139,15 +139,17 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 builder: (context, snapshot) {
                   
                   // Check if the role matches
+                  // Uses a FutureBuilder to check the user's role 
+                  // Stored in SharedPrefs without needing a separate function
                   if (snapshot.connectionState == ConnectionState.waiting) {
                    return const SizedBox.shrink();
                   }
 
-                      // Only show the Portal Card if the role is 'Manager'
+                  // Only show the Portal Card if the role is 'Manager'
                   if (snapshot.hasData && snapshot.data == 'Manager') {
                   return Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
-                  child: _buildManagerPortalCard(), // Using your fancy UI method
+                  child: _buildManagerPortalCard(), // Using UI method
                   );
                   }
                   // Return nothing if they are just a regular 'Employee'
@@ -181,7 +183,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         // 1. Fetch the name from local storage to ensure accuracy
         String? savedName = await SharedPrefs.getLocalStorage('name'); 
 
-        // 2. Navigate to ManagerScreen while passing the name argument
+        // 2. Using GetX to move to ManagerScreen
+        // Pass the name in 'arguments' so the ManagerScreen knows who is logged in without having to fetch it again
          Get.to(
           () => const ManagerScreen(),
           arguments: {
@@ -211,7 +214,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 26),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 26), // Shield icon for Manager
           ),
             const SizedBox(width: 16),
             Expanded(
