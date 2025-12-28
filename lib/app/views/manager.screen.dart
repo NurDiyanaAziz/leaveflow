@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/manager_leave.controller.dart';
-import '../controller/login.controller.dart';
 import 'manager_leave_details.dart';
 
 class ManagerScreen extends StatefulWidget {
@@ -12,72 +11,56 @@ class ManagerScreen extends StatefulWidget {
 }
 
 class _ManagerScreenState extends State<ManagerScreen> {
-  int _currentIndex = 1;
+  final ManagerLeaveController managerController = Get.put(ManagerLeaveController());
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data as soon as the manager enters the screen
+    managerController.fetchLeaveRequests();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Controller initialization
-    final loginController = Get.find<LoginController>();
-    final managerController = Get.put(ManagerLeaveController());
+    final Map<String, dynamic>? args = Get.arguments;
 
-    final List<Widget> pages = [
-      _buildProfileView(loginController),
-      _buildDashboardView(managerController, loginController),
-      const Center(child: Text("Settings Page")),
-    ];
+    // Retrieve arguments passed from Employee Screen
+    final String managerName = args?['name'] ?? 'Manager';
 
-    return Scaffold(
-      body: pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: const Color(0xFF1A56BE),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: "Settings",
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Dashboard View
-  Widget _buildDashboardView(
-    ManagerLeaveController managerController,
-    LoginController loginController,
-  ) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0,
+          elevation: 1,
           centerTitle: true,
+          // Leading to a back button to return to Employee Hub
           leading: IconButton(
-            icon: const Icon(Icons.logout, color: Colors.redAccent, size: 20),
-            onPressed: () => _showLogoutDialog(loginController),
+            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            onPressed: () => Get.back(),
           ),
-          title: const Text(
-            "Manager Dashboard",
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Staff Requests",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                "Logged in as $managerName", // Manager name appears here
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.black),
-              onPressed: () {},
+              icon: const Icon(Icons.refresh, color: Colors.black87),
+              onPressed: () => managerController.fetchLeaveRequests(),
             ),
           ],
           bottom: TabBar(
@@ -102,48 +85,6 @@ class _ManagerScreenState extends State<ManagerScreen> {
               managerController,
               managerController.historyRequests,
               isHistory: true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Profile View
-  Widget _buildProfileView(LoginController loginController) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Profile"),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 30),
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: Color(0xFFF0F2F5),
-              child: Icon(Icons.person, size: 50, color: Color(0xFF1A56BE)),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Manager Name",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              loginController.emailController.text.isNotEmpty
-                  ? loginController.emailController.text
-                  : "manager@leaveflow.com",
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const SizedBox(height: 40),
-            _profileOption(Icons.edit_outlined, "Edit Profile"),
-            _profileOption(
-              Icons.logout,
-              "Logout",
-              color: Colors.red,
-              onTap: () => _showLogoutDialog(loginController),
             ),
           ],
         ),
@@ -243,65 +184,6 @@ class _ManagerScreenState extends State<ManagerScreen> {
     });
   }
 
-  // Dialogs and UI
-
-  // Handle secure logout and clears session data
-  void _showLogoutDialog(LoginController controller) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Center(
-          child: Text(
-            "Logout",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-          ),
-        ),
-        content: const Text(
-          "Are you sure you want to logout?",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-        ),
-        actionsPadding: const EdgeInsets.only(bottom: 20),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Cancel Button
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text(
-                  "Cancel", 
-                  style: TextStyle(
-                    color: Colors.deepPurpleAccent,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              // Logout Button
-              TextButton(
-                onPressed: () {
-                  controller.emailController.clear();
-                  controller.passwordController.clear();
-                  Get.offAllNamed('/login');
-                },
-                child: const Text(
-                  "Logout",
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _badge(String status) {
     final String cleanStatus = status.toLowerCase();
     Color color = cleanStatus == 'approved'
@@ -322,30 +204,6 @@ class _ManagerScreenState extends State<ManagerScreen> {
           fontSize: 10,
         ),
       ),
-    );
-  }
-
-  Widget _profileOption(
-    IconData icon,
-    String title, {
-    Color? color,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? Colors.black87),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: color ?? Colors.black87,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 14,
-        color: Colors.grey,
-      ),
-      onTap: onTap,
     );
   }
 }

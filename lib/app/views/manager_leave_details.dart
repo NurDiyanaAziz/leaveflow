@@ -9,8 +9,9 @@ class ManagerLeaveDetails extends StatelessWidget {
   final Map<String, dynamic> request;
   final TextEditingController remarksController = TextEditingController();
 
-  // Controller for consistent use in logic
-  final ManagerLeaveController controller = Get.find<ManagerLeaveController>();
+  final ManagerLeaveController controller = Get.isRegistered<ManagerLeaveController>() 
+    ? Get.find<ManagerLeaveController>() 
+    : Get.put(ManagerLeaveController());
 
   ManagerLeaveDetails({super.key, required this.request});
 

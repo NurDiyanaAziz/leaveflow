@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
+import 'package:leaveflow/app/views/manager.screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({Key? key}) : super(key: key);
@@ -132,6 +133,28 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               _buildGreetingCard(),
               const SizedBox(height: 16),
 
+              // Manager Check Section
+              FutureBuilder<String?>(
+                future: SharedPrefs.getLocalStorage('role'),
+                builder: (context, snapshot) {
+                  
+                  // Check if the role matches
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                   return const SizedBox.shrink();
+                  }
+
+                      // Only show the Portal Card if the role is 'Manager'
+                  if (snapshot.hasData && snapshot.data == 'Manager') {
+                  return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildManagerPortalCard(), // Using your fancy UI method
+                  );
+                  }
+                  // Return nothing if they are just a regular 'Employee'
+                  return const SizedBox.shrink();
+                },
+              ),
+
               // Leave Balance Section
               _buildLeaveBalance(),
               const SizedBox(height: 16),
@@ -148,6 +171,62 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  // UI Widget for Manager Portal Card
+  Widget _buildManagerPortalCard() {
+    return InkWell(
+      onTap: () async {
+        // 1. Fetch the name from local storage to ensure accuracy
+        String? savedName = await SharedPrefs.getLocalStorage('name'); 
+
+        // 2. Navigate to ManagerScreen while passing the name argument
+         Get.to(
+          () => const ManagerScreen(),
+          arguments: {
+            // Use the fetched name, fallback to Firebase name, then 'Manager'
+            'name': savedName ?? user?.displayName ?? 'Manager', 
+          },
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue[900]!, Colors.blue[700]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            // Icon Container
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 26),
+          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('Manager Portal', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Review staff leave requests', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+          ],
+        ),
+      ),
     );
   }
 

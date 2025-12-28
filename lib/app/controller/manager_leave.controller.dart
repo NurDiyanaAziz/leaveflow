@@ -11,7 +11,6 @@ class ManagerLeaveController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchLeaveRequests(); // Load data when manager dashboard opens
   }
 
   // Main refresh function used by Pull-to-Refresh and Tab switching

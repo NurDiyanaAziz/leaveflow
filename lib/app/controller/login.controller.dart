@@ -8,7 +8,6 @@ import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 // import 'package:leaveflow/app/widgets/navigationbar.widget.dart';
 import 'package:leaveflow/app/views/employee.screen.dart';
-import 'package:leaveflow/app/views/manager.screen.dart';
 
 class LoginController extends GetxController {
   final TextEditingController emailController = TextEditingController();
@@ -100,14 +99,8 @@ class LoginController extends GetxController {
 
               // 4. Navigate based on Role
               Get.snackbar('Success', 'Welcome back, $name ($role)');
-
-              if (role == 'Manager') {
-                print("Navigating to Manager Screen...");
-                Get.offAll(() => const ManagerScreen());
-              } else {
-                print("Navigating to Employee Screen...");
-                Get.offAll(() => const EmployeeScreen());
-              }
+              log("Navigating to Employee Dashboard (Unified View)");
+              Get.offAll(() => const EmployeeScreen());
             } else {
               // Critical Error: User exists in Firebase but NOT in MySQL
               Get.snackbar(
