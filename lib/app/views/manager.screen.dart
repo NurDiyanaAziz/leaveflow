@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leaveflow/app/views/employee.screen.dart';
 import '../controller/manager_leave.controller.dart';
 import 'manager_leave_details.dart';
 
@@ -38,7 +39,7 @@ class _ManagerScreenState extends State<ManagerScreen> {
           // Leading to a back button to return to Employee Hub
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black87),
-            onPressed: () => Get.back(),
+            onPressed: () => Get.off(() => const EmployeeScreen()),
           ),
           title: Column(
             mainAxisSize: MainAxisSize.min,
