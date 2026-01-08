@@ -80,4 +80,31 @@ class ApiServices {
 
     return response;
   }
+
+  Future<Response?> getJson(String endpoint) async {
+    try {
+      String? token = await SharedPrefs.getLocalStorage('token');
+      
+      // IMPORTANT: Make sure this matches the URL you use in postJson
+      // Android Emulator: 'http://10.0.2.2:3000/api'
+      // iOS / Web: 'http://localhost:3000/api'
+      String baseUrl = 'http://10.0.2.2:3000/api'; 
+
+      var response = await Dio().get(
+        '$baseUrl$endpoint',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          // This prevents the app from crashing on 404/500 errors
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+      return response;
+    } catch (e) {
+      print("API GET Error: $e");
+      return null;
+    }
+  }
 }

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/manager.screen.dart';
+import 'package:leaveflow/app/views/profile.screen.dart';
+import 'package:leaveflow/app/views/settings.screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({Key? key}) : super(key: key);
@@ -668,35 +670,62 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(Icons.person_outline, 'Profile', false),
-              _buildNavItem(Icons.home, 'Home', true),
-              _buildNavItem(Icons.settings_outlined, 'Settings', false),
+              // 1. PROFILE BUTTON
+              _buildNavItem(
+                Icons.person_outline, 
+                'Profile', 
+                false, 
+                onTap: () => Get.to(() => const ProfileScreen()), // Navigate to Profile
+              ),
+
+              // 2. HOME BUTTON (Already Here)
+              _buildNavItem(
+                Icons.home, 
+                'Home', 
+                true, 
+                onTap: () {}, // Do nothing, we are already here
+              ),
+
+              // 3. SETTINGS BUTTON
+              _buildNavItem(
+                Icons.settings_outlined, 
+                'Settings', 
+                false, 
+                onTap: () => Get.to(() => const SettingsScreen()), // Navigate to Settings
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.blue[600] : Colors.grey[600],
-          size: 24,
+  
+Widget _buildNavItem(IconData icon, String label, bool isActive, {required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap, // Handle the click
+      borderRadius: BorderRadius.circular(10), // Ripple effect shape
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Bigger touch target
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? Colors.blue[600] : Colors.grey[600],
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isActive ? Colors.blue[600] : Colors.grey[600],
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isActive ? Colors.blue[600] : Colors.grey[600],
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
