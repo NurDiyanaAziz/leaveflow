@@ -12,8 +12,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _emailNotifs = true;
-  bool _darkMode = Get.isDarkMode;
 
   void _logout() async {
     // 1. Show Confirmation Dialog (Matches Homepage logic)
@@ -84,7 +82,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildHeader("Account"),
                   _buildTile(Icons.lock_outline, "Change Password", onTap: _resetPassword),
                   _buildDivider(),
-                  _buildSwitch(Icons.notifications_outlined, "Email Notifications", _emailNotifs, (val) => setState(() => _emailNotifs = val)),
                 ],
               ),
             ),
@@ -98,18 +95,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _buildHeader("Application"),
-                  // _buildSwitch(
-                  //     Icons.dark_mode_outlined, 
-                  //     "Dark Mode", 
-                  //     _darkMode, 
-                  //     (val) {
-                  //       setState(() => _darkMode = val); // Update the switch UI
-                        
-                  //       // THE MAGIC LINE: Actually switch the theme
-                  //       Get.changeTheme(val ? ThemeData.dark() : ThemeData.light());
-                  //     }
-                  //   ),
-                  //_buildDivider(),
                   _buildTile(Icons.info_outline, "About LeaveFlow", onTap: () {}),
                   _buildDivider(),
                   _buildTile(Icons.privacy_tip_outlined, "Privacy Policy", onTap: () {}),
@@ -203,22 +188,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
       trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
       onTap: onTap,
-    );
-  }
-
-  Widget _buildSwitch(IconData icon, String title, bool value, Function(bool) onChanged) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: Colors.grey[700], size: 20),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-      trailing: Switch(
-        value: value,
-        activeColor: Colors.blue[700],
-        onChanged: onChanged,
-      ),
     );
   }
 
