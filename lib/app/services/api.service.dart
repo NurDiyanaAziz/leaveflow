@@ -6,21 +6,53 @@ final ApiServices api = ApiServices();
 class ApiServices {
   var baseUrl = 'http://10.0.2.2:3000/api';
 
-  // For fetching lists (TODO and HISTORY)
   Future<Response?> getDio(String path) async {
-    String? token = await SharedPrefs.getLocalStorage('token') ?? '';
-    String url = baseUrl + path;
-    var headers = {
-      'accept': 'application/json',
-      'authorization': 'Bearer $token',
-    };
-
-    var response = await Dio().get(url, options: Options(headers: headers));
-
-    return response;
+    try {
+      String? token = await SharedPrefs.getLocalStorage('token') ?? '';
+      String url = baseUrl + path;
+      
+      print('🌐 Making request to: $url');
+      
+      var headers = {
+        'accept': 'application/json',
+        'authorization': 'Bearer $token',
+      };
+      
+      var dio = Dio();
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.receiveTimeout = const Duration(seconds: 10);
+      
+      var response = await dio.get(
+        url, 
+        options: Options(headers: headers),
+      );
+      
+      print('✅ Response received: ${response.statusCode}');
+      return response;
+      
+    } on DioException catch (e) {
+      print('❌ DioException occurred:');
+      print('❌ Type: ${e.type}');
+      print('❌ Message: ${e.message}');
+      print('❌ Error: ${e.error}');
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        print('❌ CONNECTION TIMEOUT - Backend not reachable');
+      } else if (e.type == DioExceptionType.connectionError) {
+        print('❌ CONNECTION ERROR - Check if backend is running');
+        print('❌ Make sure backend is running on port 3000');
+        print('❌ Try changing baseUrl to your computer\'s IP address');
+      }
+      
+      rethrow;
+      
+    } catch (e) {
+      print('❌ Unexpected error: $e');
+      rethrow;
+    }
   }
 
-  // For approving or rejecting requests
   Future<Response?> putDio(String path, Map<String, dynamic> data) async {
     String? token = await SharedPrefs.getLocalStorage('token') ?? '';
     String url = baseUrl + path;
@@ -29,22 +61,18 @@ class ApiServices {
       'Content-Type': 'application/json',
       'authorization': 'Bearer $token',
     };
-
     var response = await Dio().put(
       url,
       data: data,
       options: Options(headers: headers),
     );
-
     return response;
   }
 
-  //create Post Dio
-  Future<Response?> postDio(String path, FormData? formData) async {
+  Future<Response?> postDio(String path, dynamic formData) async {
     String? token = await SharedPrefs.getLocalStorage('token') ?? '';
     String url = baseUrl + path;
     var headers = {'accept': 'application/json'};
-
     if (token.isNotEmpty) {
       headers['authorization'] = 'Bearer $token';
     }
@@ -54,30 +82,24 @@ class ApiServices {
       data: formData,
       options: Options(headers: headers),
     );
-
     return response;
   }
 
-  // param different
   Future<Response?> postJson(String path, Map<String, dynamic> data) async {
     String? token = await SharedPrefs.getLocalStorage('token') ?? '';
     String url = baseUrl + path;
-
     var headers = {
       'accept': 'application/json',
-      'Content-Type': 'application/json', // Important for JSON payload
+      'Content-Type': 'application/json',
     };
-
     if (token.isNotEmpty) {
       headers['authorization'] = 'Bearer $token';
     }
-
     var response = await Dio().post(
       url,
-      data: data, // Send the Map directly as JSON data
+      data: data,
       options: Options(headers: headers),
     );
-
     return response;
   }
 
