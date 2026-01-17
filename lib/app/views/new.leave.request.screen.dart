@@ -48,6 +48,7 @@ class _NewLeaveRequestScreenState extends State<NewLeaveRequestScreen> {
     
     try {
       final balance = await LeaveApiService.getLeaveBalance();
+      print("DEBUG: API RESPONSE: $balance");
       setState(() {
         leaveTypes = balance;
         isLoadingTypes = false;
@@ -236,7 +237,40 @@ class _NewLeaveRequestScreenState extends State<NewLeaveRequestScreen> {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            // Show confirmation dialog
+            final shouldPop = await showDialog<bool>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Discard changes?'),
+                  content: const Text('If you go back now, your leave request details will be lost.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context, false); // Return 'false' to dialog
+                      },
+                      child: const Text('Keep Editing'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context, true); // Return 'true' to dialog
+                      },
+                      child: const Text(
+                        'Discard', 
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+
+            // If user clicked "Discard" (true), go back to previous screen
+            if (shouldPop == true) {
+              if (mounted) Navigator.pop(context);
+            }
+          },
         ),
         title: const Text(
           'New Leave Request',
@@ -339,6 +373,7 @@ class _NewLeaveRequestScreenState extends State<NewLeaveRequestScreen> {
                               ),
                       ),
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -374,6 +409,8 @@ class _NewLeaveRequestScreenState extends State<NewLeaveRequestScreen> {
               setState(() {
                 selectedLeaveType = type['leave_type'];
                 selectedLeaveTypeId = type['leave_type_id'];
+
+                print("Selected ID: $selectedLeaveTypeId");
               });
             },
             child: Container(

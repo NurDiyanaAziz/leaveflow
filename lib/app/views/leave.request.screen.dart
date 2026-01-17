@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:leaveflow/app/services/leave_api_service.dart';
+import 'package:leaveflow/app/views/leave.detail.screen.dart';
 
 class LeaveRequestScreen extends StatefulWidget {  // Changed class name
   const LeaveRequestScreen({super.key});
@@ -249,8 +250,20 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {  // Changed s
             : Colors.red;
 
     return InkWell(
-      onTap: () {
-        _showRequestDetails(request);
+      onTap: () async {
+        // 1. Navigate to Details and WAIT for result
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LeaveDetailScreen(request: request),
+          ),
+        );
+
+        // 2. If result is 'true', it means a request was cancelled.
+        //    We must refresh THIS list immediately so the user sees "Cancelled".
+        if (result == true) {
+          _loadRequests(); // Call your existing function that fetches data
+        }
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -413,7 +426,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {  // Changed s
             if (request['start_date'] != null && request['end_date'] != null)
               _buildDetailRow(
                 'Dates',
-                '${_formatDate(DateTime.parse(request['start_date']))} - ${_formatDate(DateTime.parse(request['end_date']))}',
+                '${_formatDate(DateTime.parse(request['start_date'].toString()).toLocal())} - ${_formatDate(DateTime.parse(request['end_date'].toString()).toLocal())}',
                 icon: Icons.calendar_today,
               ),
             if (request['reason'] != null && request['reason'].toString().isNotEmpty)
@@ -422,11 +435,11 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {  // Changed s
                 request['reason'],
                 icon: Icons.notes,
               ),
-            if (request['manager_response'] != null && 
-                request['manager_response'].toString().isNotEmpty)
+            if (request['manager_remarks'] != null && 
+                request['manager_remarks'].toString().isNotEmpty)
               _buildDetailRow(
                 'Manager Response',
-                request['manager_response'],
+                request['manager_remarks'],
                 icon: Icons.comment,
               ),
             const SizedBox(height: 24),

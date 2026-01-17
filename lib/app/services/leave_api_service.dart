@@ -27,6 +27,7 @@ class LeaveApiService {
             
             balances.add({
               'leave_type': item['leave_type'],
+              'leave_type_id': item['leave_type_id'],
               'available': available,
               'used': used,
               'total': total,
@@ -130,7 +131,7 @@ class LeaveApiService {
               'status': item['status'] ?? 'Pending',
               'reason': item['reason'] ?? '',
               'created_at': item['created_at'],
-              'manager_response': item['manager_response'],
+              'manager_remarks': item['manager_remarks'],
             });
           }
           
@@ -144,6 +145,25 @@ class LeaveApiService {
     } catch (e) {
       print('❌ Error in getAllRequests: $e');
       return [];
+    }
+  }
+
+  static Future<bool> cancelRequest(int requestId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
+
+      // 👇 FIXED: Changed 'dio.post' to 'api.postDio'
+      // Also removed the named parameter 'data:' because your wrapper likely expects arguments like (url, body)
+      final response = await api.postDio('/users/cancel-request', {
+        'requestId': requestId,
+        'userId': user.uid, 
+      });
+
+      return response?.statusCode == 200 && response?.data['success'] == true;
+    } catch (e) {
+      print('Cancel Error: $e');
+      return false;
     }
   }
   

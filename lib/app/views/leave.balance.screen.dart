@@ -180,13 +180,20 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
     );
   }
 
-  Widget _buildLeaveBalanceList() {
+Widget _buildLeaveBalanceList() {
     // Calculate totals
     double totalAvailable = 0;
     double totalUsed = 0;
     double totalDays = 0;
 
     for (var leave in leaveBalance) {
+      final type = (leave['leave_type'] ?? '').toString().toLowerCase();
+      
+      // 🛑 LOGIC FIX: Skip 'Unpaid Leave' for the summary totals
+      if (type.contains('unpaid')) {
+        continue; 
+      }
+
       totalAvailable += (leave['available'] ?? 0).toDouble();
       totalUsed += (leave['used'] ?? 0).toDouble();
       totalDays += (leave['total'] ?? 0).toDouble();
@@ -199,11 +206,10 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Summary Card
+            // Summary Card (Now reflects only PAID leave)
             _buildSummaryCard(totalAvailable, totalUsed, totalDays),
             const SizedBox(height: 24),
 
-            // Section Header
             const Text(
               'Leave Types',
               style: TextStyle(
@@ -221,11 +227,8 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
                 )),
 
             const SizedBox(height: 16),
-
-            // Info Note
             _buildInfoNote(),
-            
-            const SizedBox(height: 80),
+            const SizedBox(height: 30),
           ],
         ),
       ),

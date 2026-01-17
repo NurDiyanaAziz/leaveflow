@@ -7,6 +7,7 @@ import 'package:leaveflow/app/views/leave.request.screen.dart'; // ADD THIS
 import 'package:leaveflow/app/services/leave_api_service.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/new.leave.request.screen.dart';
+import 'package:leaveflow/app/widgets/home.calendar.card.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({super.key});
@@ -23,6 +24,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   bool isLoading = true;
   bool isLoadingRequests = false; // ADD THIS
   String? errorMessage;
+  List<Map<String, dynamic>> allRequests = [];
 
   @override
   void initState() {
@@ -73,9 +75,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
     try {
       final requests = await LeaveApiService.getRecentRequests(limit: 3);
+
+      final all = await LeaveApiService.getAllRequests();
       
       setState(() {
         recentRequests = requests;
+        allRequests = all;
         isLoadingRequests = false;
       });
     } catch (e) {
@@ -134,7 +139,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           tooltip: 'Logout',
         ),
         title: const Text(
-          'Leave',
+          'LeaveFlow',
           style: TextStyle(
             color: Colors.black87,
             fontSize: 18,
@@ -164,14 +169,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               children: [
                 _buildWelcomeHeader(),
                 const SizedBox(height: 16),
-                _buildGreetingCard(),
+                const SizedBox(height: 10),
+                HomeCalendarCard(leaveRequests: allRequests),
                 const SizedBox(height: 16),
                 _buildLeaveBalance(),
                 const SizedBox(height: 16),
                 _buildQuickActions(),
                 const SizedBox(height: 16),
                 _buildRecentRequests(),
-                const SizedBox(height: 80),
+                //const SizedBox(height: 5),
               ],
             ),
           ),
@@ -197,7 +203,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             ),
             Flexible(
               child: Text(
-                user?.email ?? 'No email found',
+                '${user?.displayName ?? user?.email?.split('@')[0] ?? 'User'}!',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.blue[700],
@@ -447,52 +453,33 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            'New Request',
-            Icons.add,
-            Colors.blue[700]!,
-            Colors.white,
-            onTap: () async {
-              // Navigate and refresh if request was submitted
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NewLeaveRequestScreen(),
-                ),
-              );
-              
-              // If request was submitted successfully, refresh the data
-              if (result == true) {
-                _refreshAll();
-              }
-            },
-          ),
+  
+
+Widget _buildQuickActions() {
+    return SizedBox(
+      width: double.infinity, 
+      child: _buildActionButton(
+        'New Request',
+        Icons.add_circle_outline, // Changed icon slightly to look more "main action"
+        Colors.blue[700]!,
+        Colors.white,
+        onTap: () async {
+          // Navigate and refresh if request was submitted
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const NewLeaveRequestScreen(),
+            ),
+          );
+          
+          // If request was submitted successfully, refresh the data
+          if (result == true) {
+            _refreshAll();
+          }
+        },
       ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            'View History',
-            Icons.description_outlined,
-            Colors.blue[50]!,
-            Colors.blue[700]!,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LeaveRequestScreen(),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
-
   Widget _buildActionButton(
     String label,
     IconData icon,
@@ -568,13 +555,18 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               ),
               if (recentRequests.isNotEmpty)
                 TextButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    // 1. Go to the History List and wait
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const LeaveRequestScreen(),
                       ),
                     );
+                    
+                    // 2. When they come back (Back button pressed),
+                    //    Refresh the Dashboard just in case they cancelled something.
+                    _refreshAll(); 
                   },
                   child: Text(
                     'View All',
@@ -589,47 +581,62 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           ),
           const SizedBox(height: 16),
           
-          if (isLoadingRequests)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
+          Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+          child: Column(
+            children: [
+        // 1. Loading State
+        if (isLoading)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          )),
+
+        // 2. Empty State (Only show if NOT loading and IS empty)
+        if (!isLoading && recentRequests.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No recent leave requests',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () async {
+                      // 👇 UPDATED: Now it actually opens the screen!
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NewLeaveRequestScreen(),
+                        ),
+                      );
+                      if (result == true) _refreshAll();
+                    },
+                    child: const Text('Create your first request'),
+                  ),
+                ],
               ),
-            )
-          else if (recentRequests.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey[400]),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No recent leave requests',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('New Request feature coming soon')),
-                        );
-                      },
-                      child: const Text('Create your first request'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...recentRequests.map((request) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildRequestCard(request),
-                )),
-        ],
-      ),
-    );
-  }
+            ),
+          ),
+
+        // 3. List Data (Only show if NOT loading and NOT empty)
+        if (!isLoading && recentRequests.isNotEmpty)
+          ...recentRequests.map((request) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildRequestCard(request),
+          )),
+      ],
+            ),
+          )
+          ]
+          ));
+    }
+  
 
    Widget _buildRequestCard(Map<String, dynamic> request) {
     final status = request['status'] as String;
@@ -641,6 +648,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     String dateRange = '';
     if (request['start_date'] != null && request['end_date'] != null) {
       final startDate = DateTime.parse(request['start_date']);
+
       final endDate = DateTime.parse(request['end_date']);
       
       if (startDate.day == endDate.day && 

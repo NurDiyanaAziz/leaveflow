@@ -69,7 +69,7 @@ class ApiServices {
     return response;
   }
 
-  Future<Response?> postDio(String path, FormData? formData) async {
+  Future<Response?> postDio(String path, dynamic formData) async {
     String? token = await SharedPrefs.getLocalStorage('token') ?? '';
     String url = baseUrl + path;
     var headers = {'accept': 'application/json'};
