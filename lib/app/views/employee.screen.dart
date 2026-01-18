@@ -183,6 +183,29 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               children: [
                 _buildWelcomeHeader(),
                 const SizedBox(height: 16),
+                // Manager Check Section
+              FutureBuilder<String?>(
+                future: SharedPrefs.getLocalStorage('role'),
+                builder: (context, snapshot) {
+                  
+                  // Check if the role matches
+                  // Uses a FutureBuilder to check the user's role 
+                  // Stored in SharedPrefs without needing a separate function
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                   return const SizedBox.shrink();
+                  }
+
+                  // Only show the Portal Card if the role is 'Manager'
+                  if (snapshot.hasData && snapshot.data == 'Manager') {
+                  return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildManagerPortalCard(), // Using UI method
+                  );
+                  }
+                  // Return nothing if they are just a regular 'Employee'
+                  return const SizedBox.shrink();
+                },
+              ),
                 const SizedBox(height: 10),
                 HomeCalendarCard(leaveRequests: allRequests),
                 const SizedBox(height: 16),
@@ -267,7 +290,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             Text(
               'Welcome, ',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
               ),
@@ -276,7 +299,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               child: Text(
                 '${user?.displayName ?? user?.email?.split('@')[0] ?? 'User'}!',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   color: Colors.blue[700],
                   fontWeight: FontWeight.w600,
                 ),
@@ -286,14 +309,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           ],
         ),
         const SizedBox(height: 4),
-        Container(
-          height: 2,
-          width: 40,
-          decoration: BoxDecoration(
-            color: Colors.blue[700],
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
+        
       ],
     );
   }

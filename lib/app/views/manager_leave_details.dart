@@ -29,7 +29,7 @@ class ManagerLeaveDetails extends StatelessWidget {
 
     String apiBase = api.baseUrl;
     String fileBase = apiBase.replaceAll('/api', '');
-    fullUrl = "$fileBase/uploads/$fileName";
+    fullUrl = "$fileBase/$fileName";
     debugPrint("--- Attempting to open file: $fullUrl ---");
     }
 
