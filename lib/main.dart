@@ -1,7 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:leaveflow/app/services/api.service.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
+import 'package:leaveflow/app/views/leave.detail.screen.dart';
+import 'package:leaveflow/app/views/manager_leave_details.dart';
 import 'package:leaveflow/app/views/wrapper.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/manager.screen.dart';
@@ -19,6 +22,37 @@ const AndroidNotificationChannel channel = AndroidNotificationChannel(
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+  Future<void> _handleNotificationClick(RemoteMessage message) async {
+  final data = message.data;
+  final String? screen = data['screen'];
+  final String? requestId = data['requestId'];
+
+  if (screen == null || requestId == null) return;
+
+  print("🔔 Notification Clicked: Going to $screen for ID $requestId");
+
+  try {
+    // 1. Fetch the full request details from API
+    // You need to add this endpoint to your API Service if it doesn't exist
+    // Or just reuse 'getAllRequests' and filter locally (easiest for MVP)
+    final response = await api.getDio('/users/leave-request/$requestId'); 
+    
+    if (response != null && response.statusCode == 200) {
+      final requestData = response.data['data']; // Ensure backend returns { data: { ... } }
+
+      // 2. Navigate based on screen type
+      if (screen == 'manager_detail') {
+        Get.to(() => ManagerLeaveDetails(request: requestData));
+      } else if (screen == 'employee_detail') {
+        Get.to(() => LeaveDetailScreen(request: requestData));
+      }
+    }
+  } catch (e) {
+    print("Error fetching details for notification: $e");
+    Get.snackbar("Error", "Could not load request details");
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,9 +79,17 @@ Future<void> main() async {
   );
   print('User granted permission: ${settings.authorizationStatus}');
 
-  // 4. Get Token
-  final fcmToken = await FirebaseMessaging.instance.getToken();
-  print("MY TEST TOKEN: $fcmToken");
+  // 1. Handle App Closed -> Open
+  FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+    if (message != null) {
+      _handleNotificationClick(message);
+    }
+  });
+
+  // 2. Handle App Background -> Open
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    _handleNotificationClick(message);
+  });
 
   runApp(const MyApp());
 }

@@ -4,7 +4,8 @@ import 'package:leaveflow/app/services/sharedprefs.dart';
 final ApiServices api = ApiServices();
 
 class ApiServices {
-  var baseUrl = 'http://10.0.2.2:3000/api';
+  var baseUrl = 'http://10.0.2.2:3000/api'; //emulator
+  //var baseUrl = 'http://192.168.100.23:3000/api'; //real device testing,1. cmd and ipconfig ,get ipv4 and replace in baseUrl
 
   Future<Response?> getDio(String path) async {
     try {
@@ -110,7 +111,6 @@ class ApiServices {
       // IMPORTANT: Make sure this matches the URL you use in postJson
       // Android Emulator: 'http://10.0.2.2:3000/api'
       // iOS / Web: 'http://localhost:3000/api'
-      String baseUrl = 'http://10.0.2.2:3000/api'; 
 
       var response = await Dio().get(
         '$baseUrl$endpoint',
@@ -126,6 +126,35 @@ class ApiServices {
       return response;
     } catch (e) {
       print("API GET Error: $e");
+      return null;
+    }
+  }
+
+  // PUT Request (Updates data on the server)
+  Future<Response?> putJson(String endpoint, Map<String, dynamic> data) async {
+    try {
+      // 1. Get Token
+      String? token = await SharedPrefs.getLocalStorage('token');
+      var dio = Dio();
+      
+      // 2. Set Headers
+      dio.options.headers['Authorization'] = 'Bearer $token';
+      dio.options.headers['Content-Type'] = 'application/json';
+
+      // 3. Make the Request
+      final response = await dio.put(
+        baseUrl + endpoint, // e.g., http://192.168.x.x:3000/api/manager/request/22
+        data: data,
+      );
+      
+      return response;
+    } on DioException catch (e) {
+      // Handle standard Dio errors
+      print("❌ API PUT Error: ${e.response?.statusCode} - ${e.message}");
+      // Return the error response so the controller can read the message (e.g., "Missing UID")
+      return e.response;
+    } catch (e) {
+      print("❌ Unexpected API Error: $e");
       return null;
     }
   }

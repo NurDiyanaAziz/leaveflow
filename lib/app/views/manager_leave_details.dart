@@ -139,7 +139,7 @@ class ManagerLeaveDetails extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => _confirmAction(context, "rejected"),
+                      onPressed: () => _confirmAction(context, "reject"),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors.red),
@@ -157,7 +157,7 @@ class ManagerLeaveDetails extends StatelessWidget {
                   const SizedBox(width: 15),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _confirmAction(context, "approved"),
+                      onPressed: () => _confirmAction(context, "approve"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1A56BE),
                         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -176,6 +176,7 @@ class ManagerLeaveDetails extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 50),
             ] else
               // Show the status badge if already Approved or Rejected
               _buildStatusBadge(status),
@@ -185,7 +186,6 @@ class ManagerLeaveDetails extends StatelessWidget {
     );
   }
 
-  // Handle the confirmation dialog and triggers the controller update
   void _confirmAction(BuildContext context, String action) async {
     Get.dialog(
       AlertDialog(
@@ -196,19 +196,32 @@ class ManagerLeaveDetails extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Get.back(); // Close the Confirmation Dialog
+              
+              // 🔍 FIXED: Check both 'id' (from Notif) AND 'request_id' (from List)
+              var rawId = request['id'] ?? request['request_id'];
+
+              if (rawId == null) {
+                 Get.snackbar("Error", "Request ID not found. Please refresh.");
+                 return;
+              }
+
+              // Safely convert to string
+              String finalRequestId = rawId.toString(); 
+
               debugPrint(
-                "--- UI: Attempting to update request_id: ${request['request_id']} ---",
+                "--- UI: Attempting to update request_id: $finalRequestId ---",
               );
+              
               String managerRemarks = remarksController.text.trim();
 
               bool success = await controller.updateRequestStatus(
-                request['request_id'],
+                finalRequestId, // Use the safe ID
                 action,
                 managerRemarks,
               );
+              
               debugPrint("--- UI: Success Signal received: $success ---");
 
-              // If true close the Details Page and go to Todo List
               if (success) {
                 debugPrint("--- UI: Closing Details Page now ---");
                 Get.back(result: true);
@@ -216,7 +229,7 @@ class ManagerLeaveDetails extends StatelessWidget {
                   "Success",
                   "Request ${action}ed successfully",
                   snackPosition: SnackPosition.TOP,
-                  backgroundColor: Colors.green.withValues(alpha:0.9),
+                  backgroundColor: Colors.green.withOpacity(0.9),
                   colorText: Colors.white,
                   icon: const Icon(Icons.check_circle, color: Colors.white),
                   duration: const Duration(seconds: 2),
@@ -237,7 +250,7 @@ class ManagerLeaveDetails extends StatelessWidget {
       ),
     );
   }
-
+  
   String _formatDate(dynamic date) {
     if (date == null || date.toString().isEmpty) return "N/A";
     try {

@@ -52,7 +52,7 @@ class _ManagerScreenState extends State<ManagerScreen> with SingleTickerProvider
               style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20),
             ),
             Text(
-              "Welcome back, $managerName",
+              "Manager $managerName",
               style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ],
@@ -69,7 +69,7 @@ class _ManagerScreenState extends State<ManagerScreen> with SingleTickerProvider
           const SizedBox(width: 16),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(70),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(6),
@@ -95,7 +95,7 @@ class _ManagerScreenState extends State<ManagerScreen> with SingleTickerProvider
             unselectedLabelColor: Colors.grey[600], // Inactive Text Color
             
             tabs: const [
-              Tab(text: "Pending Actions"),
+              Tab(text: "Pending"),
               Tab(text: "History Log"),
             ],
           ),

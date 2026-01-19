@@ -35,7 +35,7 @@ class LoginScreen extends StatelessWidget {
                     children: [
                       Image.asset(
                         'assets/images/login.png',
-                        height: containerHeight * 0.6,
+                        height: containerHeight * 0.5,
                         fit: BoxFit.contain,
                       ),
                       // const SizedBox(height: 5),
@@ -81,7 +81,7 @@ class LoginScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(
                   top: 20,
                   left: 30,
-                  right: 30,
+                  right: 20,
                   bottom: 20,
                 ),
                 child: Column(
@@ -175,31 +175,28 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     //register button & forgot password button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: (() => Get.to(() => const Signup())),
-                          child: const Text(
-                            "Register Now!",
-                            style: TextStyle(
-                              // fontSize: 16,
-                              color: Colors.grey,
+                    // Wrap the Row in a FittedBox
+                    FittedBox(
+                      fit: BoxFit.scaleDown, // shrinks content only if necessary
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: (() => Get.to(() => const Signup())),
+                            child: const Text(
+                              "Register Now!",
+                              style: TextStyle(color: Colors.grey),
                             ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: (() =>
-                              Get.to(() => const ForgotPassword())),
-                          child: const Text(
-                            "Forgot Password?",
-                            style: TextStyle(
-                              // fontSize: 16,
-                              color: Colors.grey,
+                          TextButton(
+                            onPressed: (() => Get.to(() => const ForgotPassword())),
+                            child: const Text(
+                              "Forgot Password?",
+                              style: TextStyle(color: Colors.grey),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

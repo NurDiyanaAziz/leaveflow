@@ -29,11 +29,7 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.check, color: Colors.blue[700]),
-            onPressed: controller.updateProfile,
-            tooltip: 'Save',
-          )
+          
         ],
       ),
       body: Obx(() {

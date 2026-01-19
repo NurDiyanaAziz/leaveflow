@@ -95,6 +95,7 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
               lastDay: DateTime.utc(2030, 12, 31),
               focusedDay: _focusedDay,
               currentDay: DateTime.now(),
+              daysOfWeekHeight: 25,
               
               selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
               
@@ -181,15 +182,19 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
             children: [
               // Title Date
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.calendar_today, color: Colors.blue[700], size: 20),
                   const SizedBox(width: 8),
-                  Text(
-                    DateFormat('EEEE, d MMMM y').format(date),
-                    style: const TextStyle(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87
+                  Expanded(
+                    child: Text(
+                      DateFormat('EEEE, d MMMM y').format(date),
+                      style: const TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87
+                      ),
+                      softWrap: true,
                     ),
                   ),
                 ],
