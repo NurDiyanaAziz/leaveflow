@@ -5,7 +5,7 @@ final ApiServices api = ApiServices();
 
 class ApiServices {
   var baseUrl = 'http://10.0.2.2:3000/api'; //emulator
-  //var baseUrl = 'http://192.168.100.23:3000/api'; //real device testing,1. cmd and ipconfig ,get ipv4 and replace in baseUrl
+  //var baseUrl = 'http://x.x.x.x:3000/api'; //real device testing,1. cmd and ipconfig ,get ipv4 and replace in baseUrl
 
   Future<Response?> getDio(String path) async {
     try {
