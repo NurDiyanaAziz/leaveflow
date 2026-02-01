@@ -17,34 +17,42 @@ class ManagerLeaveDetails extends StatelessWidget {
 
   // Function to open the attachment URL
   Future<void> _openFile(String? fileName) async {
-    if (fileName == null || fileName.isEmpty || fileName == "null") {
-      Get.snackbar("Error", "No valid file found", 
-          snackPosition: SnackPosition.TOP, backgroundColor: Colors.red, colorText: Colors.white);
-      return;
-    }
-    String fullUrl;
-    if (fileName.startsWith('http')) {
+  if (fileName == null || fileName.isEmpty || fileName == "null") {
+    Get.snackbar("Error", "No valid file found", 
+        snackPosition: SnackPosition.TOP, backgroundColor: Colors.red, colorText: Colors.white);
+    return;
+  }
+
+  String fullUrl;
+  if (fileName.startsWith('http')) {
     fullUrl = fileName; 
-    } else { 
-
+  } else { 
     String apiBase = api.baseUrl;
-    String fileBase = apiBase.replaceAll('/api', '');
-    fullUrl = "$fileBase/$fileName";
-    debugPrint("--- Attempting to open file: $fullUrl ---");
-    }
+    String domainBase = apiBase.replaceAll('/api', '');
 
-    final Uri uri = Uri.parse(fullUrl);
-    try{
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (fileName.contains('uploads/')) {
+       fullUrl = "$domainBase/$fileName";
     } else {
-      Get.snackbar("Error", "Could not reach server at $fullUrl",
-          snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange, colorText: Colors.white);
+       fullUrl = "$domainBase/uploads/$fileName";
     }
-  } catch(e) {
+  } 
+
+  if (fullUrl.toLowerCase().endsWith('.doc') || fullUrl.toLowerCase().endsWith('.docx')) {
+    debugPrint("--- [DOC DETECTED] Wrapping in Google Viewer ---"); 
+    fullUrl = "https://docs.google.com/viewer?url=${Uri.encodeComponent(fullUrl)}";
+  }
+    debugPrint("--- [DEBUG] Final Constructed URL: $fullUrl ---");
+
+  final Uri uri = Uri.parse(fullUrl);
+  try {
+    // PDF files usually require an external application (Browser or Adobe)
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (e) {
     debugPrint("Launch Error: $e");
+    Get.snackbar("Notice", "Could not open file. Try installing a PDF viewer.",
+        snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange, colorText: Colors.white);
   }
-  }
+}
 
   @override
   Widget build(BuildContext context) {
