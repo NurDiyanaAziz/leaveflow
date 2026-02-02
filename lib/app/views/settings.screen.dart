@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
+import 'package:leaveflow/app/views/forgot_password.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -40,16 +41,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _resetPassword() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user?.email != null) {
-      FirebaseAuth.instance.sendPasswordResetEmail(email: user!.email!);
-      Get.snackbar(
-        "Email Sent", 
-        "Check your inbox to reset your password.",
-        backgroundColor: Colors.white,
-        colorText: Colors.black87,
-        boxShadows: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-      );
-    }
+    // if (user?.email != null) {
+    //   FirebaseAuth.instance.sendPasswordResetEmail(email: user!.email!);
+    //   Get.snackbar(
+    //     "Email Sent", 
+    //     "Check your inbox to reset your password.",
+    //     backgroundColor: Colors.white,
+    //     colorText: Colors.black87,
+    //     boxShadows: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+    //   );
+    // }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForgotPassword(email: user?.email), // Pass the email
+      ),
+    );
   }
 
   @override
