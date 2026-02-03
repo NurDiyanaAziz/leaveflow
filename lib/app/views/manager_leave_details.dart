@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:leaveflow/app/services/api.service.dart';
+import 'package:leaveflow/app/views/image.view.screen.dart';
+import 'package:leaveflow/app/views/pdf.view.screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../controller/manager_leave.controller.dart';
 
@@ -16,44 +18,45 @@ class ManagerLeaveDetails extends StatelessWidget {
   ManagerLeaveDetails({super.key, required this.request});
 
   // Function to open the attachment URL
-  Future<void> _openFile(String? fileName) async {
+ Future<void> _openFile(String? fileName) async {
   if (fileName == null || fileName.isEmpty || fileName == "null") {
-    Get.snackbar("Error", "No valid file found", 
-        snackPosition: SnackPosition.TOP, backgroundColor: Colors.red, colorText: Colors.white);
+    Get.snackbar("Error", "No valid file found", backgroundColor: Colors.red);
     return;
   }
 
+  // 1. Construct URL (Keep existing logic)
   String fullUrl;
   if (fileName.startsWith('http')) {
-    fullUrl = fileName; 
-  } else { 
+    fullUrl = fileName;
+  } else {
     String apiBase = api.baseUrl;
     String domainBase = apiBase.replaceAll('/api', '');
-
-    if (fileName.contains('uploads/')) {
-       fullUrl = "$domainBase/$fileName";
-    } else {
-       fullUrl = "$domainBase/uploads/$fileName";
-    }
-  } 
-
-  if (fullUrl.toLowerCase().endsWith('.doc') || fullUrl.toLowerCase().endsWith('.docx')) {
-    debugPrint("--- [DOC DETECTED] Wrapping in Google Viewer ---"); 
-    fullUrl = "https://docs.google.com/viewer?url=${Uri.encodeComponent(fullUrl)}";
+    fullUrl = fileName.contains('uploads/') 
+        ? "$domainBase/$fileName" 
+        : "$domainBase/uploads/$fileName";
   }
-    debugPrint("--- [DEBUG] Final Constructed URL: $fullUrl ---");
 
-  final Uri uri = Uri.parse(fullUrl);
-  try {
-    // PDF files usually require an external application (Browser or Adobe)
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  } catch (e) {
-    debugPrint("Launch Error: $e");
-    Get.snackbar("Notice", "Could not open file. Try installing a PDF viewer.",
-        snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange, colorText: Colors.white);
+  String lowerUrl = fullUrl.toLowerCase();
+
+  // 2. ROUTING LOGIC
+  if (lowerUrl.endsWith('.pdf')) {
+    // PDF -> PDF Viewer
+    Get.to(() => PDFViewerScreen(url: fullUrl, fileName: fileName));
+  } 
+  else if (lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) {
+    // IMAGES -> Image Viewer (New!)
+    Get.to(() => ImageViewerScreen(url: fullUrl, fileName: fileName));
+  }
+  else if (lowerUrl.endsWith('.doc') || lowerUrl.endsWith('.docx')) {
+    // DOCS -> Google Viewer (Browser)
+    String googleUrl = "https://docs.google.com/viewer?url=${Uri.encodeComponent(fullUrl)}";
+    await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication); 
+  } 
+  else {
+    // FALLBACK -> Browser (for zip, rar, etc.)
+    await launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication);
   }
 }
-
   @override
   Widget build(BuildContext context) {
     if (remarksController.text.isEmpty && request['manager_remarks'] != null){
