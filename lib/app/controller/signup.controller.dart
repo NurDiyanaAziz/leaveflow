@@ -95,11 +95,11 @@ class SignupController extends GetxController {
       barrierDismissible: false,
     );
 
-    print("--- SIGNUP STARTING ---"); // DEBUG LOG
+    debugPrint("--- SIGNUP STARTING ---"); // DEBUG LOG
 
     try {
       // 1. Attempt Firebase Creation
-      print("1. Contacting Firebase...");
+      debugPrint("1. Contacting Firebase...");
       //firebase registration
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
@@ -107,13 +107,13 @@ class SignupController extends GetxController {
       User? user = userCredential.user;
 
       if (user != null) {
-        print("2. Firebase Success! UID: ${user.uid}");
+        debugPrint("2. Firebase Success! UID: ${user.uid}");
         
         await user.updateDisplayName(name);
         // await user.sendEmailVerification(); // Comment this out for testing speed if you want
 
         // 2. Attempt MySQL Creation
-        print("3. Contacting MySQL Backend...");
+        debugPrint("3. Contacting MySQL Backend...");
         
         // Note: Make sure your ApiServices path starts with /users if your server.js uses /api
         // Based on your code: url = baseUrl + path
@@ -138,7 +138,7 @@ class SignupController extends GetxController {
           emailController.clear();
           passwordController.clear();
 
-          print("4. MySQL Success! Redirecting...");
+          debugPrint("4. MySQL Success! Redirecting...");
 
           Get.offAll(() => const Wrapper());
         } else {
@@ -150,14 +150,14 @@ class SignupController extends GetxController {
               "Unknown Error";
 
               // CRITICAL ERROR LOGGING
-          print("!!! MySQL FAILED !!!");
-          print("Status Code: ${response?.statusCode}");
-          print("Error Message: ${response?.data}");
+          debugPrint("!!! MySQL FAILED !!!");
+          debugPrint("Status Code: ${response?.statusCode}");
+          debugPrint("Error Message: ${response?.data}");
 
           Get.snackbar('Setup Failed', 'Database setup failed.');
           
           // Cleanup: Delete the Firebase user so we don't get stuck in "Zombie" mode
-          print("5. Cleaning up Firebase user...");
+          debugPrint("5. Cleaning up Firebase user...");
           //clean firebase
           await user.delete();
 
@@ -175,7 +175,7 @@ class SignupController extends GetxController {
       // Display specific Firebase errors
       if (Get.isDialogOpen!) Get.back();
 
-      print("!!! FIREBASE ERROR !!!: ${e.code}"); // This will tell us if email is duplicate
+      debugPrint("!!! FIREBASE ERROR !!!: ${e.code}"); // This will tell us if email is duplicate
       Get.snackbar(
         'Sign Up Error',
         e.message ?? 'Authentication failed',
@@ -195,7 +195,7 @@ class SignupController extends GetxController {
         duration: const Duration(seconds: 5),
       );
     } catch (e) {
-      print("!!! UNKNOWN ERROR !!!: $e");
+      debugPrint("!!! UNKNOWN ERROR !!!: $e");
       Get.snackbar(
         'Sign Up Error',
         e.toString(),

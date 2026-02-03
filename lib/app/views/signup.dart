@@ -149,6 +149,7 @@ class _SignupState extends State<Signup> {
                             ),
                           ),
                           obscureText: !controller.showPassword.value,
+                          keyboardType: TextInputType.visiblePassword,
                           validator: controller.validatePassword,
                         )),
                         const SizedBox(height: 20),

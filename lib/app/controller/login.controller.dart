@@ -71,12 +71,12 @@ void clearForm() {
           await SharedPrefs.setLocalStorage('user', user.email ?? '');
 
           try {
-            print("Fetching user role from MySQL...");
+            debugPrint("Fetching user role from MySQL...");
 
-            print("--------------------------------------------------");
-            print("LOGGING IN...");
-            print("Flutter sends UID: ${user.uid}"); 
-            print("--------------------------------------------------");
+            debugPrint("--------------------------------------------------");
+            debugPrint("LOGGING IN...");
+            debugPrint("Flutter sends UID: ${user.uid}"); 
+            debugPrint("--------------------------------------------------");
             
             var response = await api.postJson('/users/login_details', {
               'uid': user.uid,
@@ -100,7 +100,7 @@ void clearForm() {
               Get.snackbar('Success', 'Welcome back, $name ($role)');
 
               if (role == 'Manager') {
-                // TODO: Point this to ManagerScreen() when you build it
+                // TO DO: Point this to ManagerScreen() when you build it
                 // Get.off(() => const ManagerScreen()); 
                 Get.off(() => const EmployeeScreen()); // For now, use EmployeeScreen
               } else {
@@ -112,7 +112,7 @@ void clearForm() {
                await clearSession();
             }
           } catch (e) {
-            print("API Error: $e");
+            debugPrint("API Error: $e");
             Get.snackbar("Connection Error", "Could not connect to server.");
           }
         } else {
