@@ -11,6 +11,7 @@ class Signup extends StatefulWidget {
 
 class _SignupState extends State<Signup> {
   final SignupController controller = Get.put(SignupController());
+  // final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -143,27 +144,22 @@ class _SignupState extends State<Signup> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Obx(
-                          () => TextFormField(
-                            controller: controller.passwordController,
-                            decoration:
-                                _inputDecoration(
-                                  'Enter strong password',
-                                ).copyWith(
-                                  suffixIcon: IconButton(
-                                    onPressed: controller.togglePasswordView,
-                                    icon: Icon(
-                                      controller.showPassword.value
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                            obscureText: !controller.showPassword.value,
-                            validator: controller.validatePassword,
+                        Obx(() => TextFormField(
+                          controller: controller.passwordController,
+                          decoration: _inputDecoration('Enter strong password').copyWith(
+                            suffixIcon: IconButton(
+                              onPressed: controller.togglePasswordView,
+                              icon: Icon(
+                                controller.showPassword.value
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey[600],
+                              ),
+                            ),
                           ),
-                        ),
+                          obscureText: !controller.showPassword.value,
+                          validator: controller.validatePassword,
+                        )),
                         const SizedBox(height: 20),
 
                         // --- 4. CONFIRM PASSWORD (NEW) ---

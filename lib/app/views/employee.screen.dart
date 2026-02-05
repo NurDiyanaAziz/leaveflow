@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/route_manager.dart';
+import 'package:leaveflow/app/views/employee_new_request.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
@@ -322,8 +324,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -358,8 +359,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -537,31 +537,35 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  
-
-Widget _buildQuickActions() {
-    return SizedBox(
-      width: double.infinity, 
-      child: _buildActionButton(
-        'New Request',
-        Icons.add_circle_outline, // Changed icon slightly to look more "main action"
-        Colors.blue[700]!,
-        Colors.white,
-        onTap: () async {
-          // Navigate and refresh if request was submitted
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const NewLeaveRequestScreen(),
-            ),
-          );
-          
-          // If request was submitted successfully, refresh the data
-          if (result == true) {
-            _refreshAll();
-          }
-        },
-      ),
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            'New Request',
+            Icons.add,
+            Colors.blue[700]!,
+            Colors.white,
+            onTap: () {
+              Get.to( () => const NewLeavesRequestScreen());
+              // Navigate to New Request screen
+              // Navigator.push(context, MaterialPageRoute(builder: (context) => NewRequestScreen()));
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionButton(
+            'View History',
+            Icons.description_outlined,
+            Colors.blue[50]!,
+            Colors.blue[700]!,
+            onTap: () {
+              // Navigate to History screen
+            },
+          ),
+        ),
+      ],
     );
   }
   Widget _buildActionButton(
@@ -581,8 +585,7 @@ Widget _buildQuickActions() {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -616,8 +619,7 @@ Widget _buildQuickActions() {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -852,8 +854,7 @@ Widget _buildQuickActions() {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
