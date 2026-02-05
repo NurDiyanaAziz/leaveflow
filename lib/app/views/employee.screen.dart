@@ -8,7 +8,7 @@ import 'package:leaveflow/app/views/profile.screen.dart';
 import 'package:leaveflow/app/views/settings.screen.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/leave.balance.screen.dart';
-import 'package:leaveflow/app/views/leave.request.screen.dart'; // ADD THIS
+import 'package:leaveflow/app/views/leave.request.screen.dart';
 import 'package:leaveflow/app/services/leave_api_service.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/new.leave.request.screen.dart';
@@ -25,20 +25,23 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   final user = FirebaseAuth.instance.currentUser;
   
   List<Map<String, dynamic>> leaveBalance = [];
-  List<Map<String, dynamic>> recentRequests = []; // ADD THIS
+  List<Map<String, dynamic>> recentRequests = [];
   bool isLoading = true;
-  bool isLoadingRequests = false; // ADD THIS
+  bool isLoadingRequests = true;
   String? errorMessage;
+  String? requestsErrorMessage;
   List<Map<String, dynamic>> allRequests = [];
 
   @override
   void initState() {
     super.initState();
     _loadLeaveBalance();
-    _loadRecentRequests(); // ADD THIS
+    _loadRecentRequests();
   }
 
   Future<void> _loadLeaveBalance() async {
+    if (!mounted) return;
+    
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -47,49 +50,50 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     try {
       final balance = await LeaveApiService.getLeaveBalance();
       
-      setState(() {
-        leaveBalance = balance;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load leave balance';
-      });
-      
-      print('Error: $e');
-      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _loadLeaveBalance,
-            ),
-          ),
-        );
+        setState(() {
+          leaveBalance = balance;
+          isLoading = false;
+        });
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load leave balance';
+        });
+      }
+      
+      print('Error loading leave balance: $e');
     }
   }
 
-    Future<void> _loadRecentRequests() async {
-    setState(() => isLoadingRequests = true);
+  Future<void> _loadRecentRequests() async {
+    if (!mounted) return;
+    
+    setState(() {
+      isLoadingRequests = true;
+      requestsErrorMessage = null;
+    });
 
     try {
       final requests = await LeaveApiService.getRecentRequests(limit: 3);
-
       final all = await LeaveApiService.getAllRequests();
       
-      setState(() {
-        recentRequests = requests;
-        allRequests = all;
-        isLoadingRequests = false;
-      });
+      if (mounted) {
+        setState(() {
+          recentRequests = requests;
+          allRequests = all;
+          isLoadingRequests = false;
+        });
+      }
     } catch (e) {
-      setState(() => isLoadingRequests = false);
+      if (mounted) {
+        setState(() {
+          isLoadingRequests = false;
+          requestsErrorMessage = 'Unable to load requests';
+        });
+      }
       print('Error loading recent requests: $e');
     }
   }
@@ -183,38 +187,24 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               children: [
                 _buildWelcomeHeader(),
                 const SizedBox(height: 16),
-                // Manager Check Section
-              FutureBuilder<String?>(
-                future: SharedPrefs.getLocalStorage('role'),
-                builder: (context, snapshot) {
-                  
-                  // Check if the role matches
-                  // Uses a FutureBuilder to check the user's role 
-                  // Stored in SharedPrefs without needing a separate function
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                   return const SizedBox.shrink();
-                  }
-
-                  // Only show the Portal Card if the role is 'Manager'
-                  if (snapshot.hasData && snapshot.data == 'Manager') {
-                  return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: _buildManagerPortalCard(), // Using UI method
-                  );
-                  }
-                  // Return nothing if they are just a regular 'Employee'
-                  return const SizedBox.shrink();
-                },
-              ),
-                const SizedBox(height: 10),
-                HomeCalendarCard(leaveRequests: allRequests),
+                
+                // Request Status at the top
+                _buildRecentRequests(),
                 const SizedBox(height: 16),
-                _buildLeaveBalance(),
-                const SizedBox(height: 16),
+                
+                // Quick Actions (New Request button)
                 _buildQuickActions(),
                 const SizedBox(height: 16),
-                _buildRecentRequests(),
-                //const SizedBox(height: 5),
+                
+                // Calendar Card
+                HomeCalendarCard(leaveRequests: allRequests),
+                const SizedBox(height: 16),
+                
+                // Leave Balance
+                _buildLeaveBalance(),
+                
+                // Add extra spacing at the bottom for better scrolling
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -314,42 +304,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildGreetingCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Hi ${user?.displayName ?? user?.email?.split('@')[0] ?? 'User'}!',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue[900],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Manage your leave requests and balance',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLeaveBalance() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -358,7 +312,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -412,17 +365,27 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             Center(
               child: Column(
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  Icon(Icons.cloud_off_outlined, size: 48, color: Colors.orange[300]),
                   const SizedBox(height: 12),
-                  Text(errorMessage!, style: TextStyle(color: Colors.red[700])),
+                  Text(
+                    errorMessage!,
+                    style: TextStyle(color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please check your connection',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: _loadLeaveBalance,
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[700],
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                   ),
                 ],
@@ -537,18 +500,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  
-
-Widget _buildQuickActions() {
+  Widget _buildQuickActions() {
     return SizedBox(
       width: double.infinity, 
       child: _buildActionButton(
         'New Request',
-        Icons.add_circle_outline, // Changed icon slightly to look more "main action"
+        Icons.add_circle_outline,
         Colors.blue[700]!,
         Colors.white,
         onTap: () async {
-          // Navigate and refresh if request was submitted
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -556,14 +516,14 @@ Widget _buildQuickActions() {
             ),
           );
           
-          // If request was submitted successfully, refresh the data
-          if (result == true) {
+          if (result == true && mounted) {
             _refreshAll();
           }
         },
       ),
     );
   }
+
   Widget _buildActionButton(
     String label,
     IconData icon,
@@ -581,7 +541,6 @@ Widget _buildQuickActions() {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.08),
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -607,7 +566,6 @@ Widget _buildQuickActions() {
     );
   }
 
-  // UPDATED _buildRecentRequests
   Widget _buildRecentRequests() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -616,7 +574,6 @@ Widget _buildQuickActions() {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -629,28 +586,43 @@ Widget _buildQuickActions() {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recent Requests',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.assignment_outlined,
+                      size: 20,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Request Status',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-              if (recentRequests.isNotEmpty)
+              if (!isLoadingRequests && recentRequests.isNotEmpty)
                 TextButton(
                   onPressed: () async {
-                    // 1. Go to the History List and wait
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const LeaveRequestScreen(),
                       ),
                     );
-                    
-                    // 2. When they come back (Back button pressed),
-                    //    Refresh the Dashboard just in case they cancelled something.
-                    _refreshAll(); 
+                    if (mounted) {
+                      _refreshAll();
+                    }
                   },
                   child: Text(
                     'View All',
@@ -666,73 +638,124 @@ Widget _buildQuickActions() {
           const SizedBox(height: 16),
           
           Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-          child: Column(
-            children: [
-        // 1. Loading State
-        if (isLoading)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: CircularProgressIndicator(),
-          )),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Column(
+              children: [
+                // Loading State
+                if (isLoadingRequests)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
 
-        // 2. Empty State (Only show if NOT loading and IS empty)
-        if (!isLoading && recentRequests.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey[400]),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No recent leave requests',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                // Error State
+                if (!isLoadingRequests && requestsErrorMessage != null)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.cloud_off_outlined, 
+                               size: 48, 
+                               color: Colors.orange[300]),
+                          const SizedBox(height: 12),
+                          Text(
+                            requestsErrorMessage!,
+                            style: TextStyle(color: Colors.grey[700]),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please check your connection',
+                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: _loadRecentRequests,
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[700],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20, 
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () async {
-                      // 👇 UPDATED: Now it actually opens the screen!
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NewLeaveRequestScreen(),
-                        ),
-                      );
-                      if (result == true) _refreshAll();
-                    },
-                    child: const Text('Create your first request'),
+
+                // Empty State
+                if (!isLoadingRequests && 
+                    requestsErrorMessage == null && 
+                    recentRequests.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.event_busy_outlined, 
+                               size: 48, 
+                               color: Colors.grey[400]),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No recent leave requests',
+                            style: TextStyle(
+                              color: Colors.grey[600], 
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NewLeaveRequestScreen(),
+                                ),
+                              );
+                              if (result == true && mounted) {
+                                _refreshAll();
+                              }
+                            },
+                            icon: const Icon(Icons.add_circle_outline, size: 18),
+                            label: const Text('Create your first request'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+
+                // List Data
+                if (!isLoadingRequests && 
+                    requestsErrorMessage == null && 
+                    recentRequests.isNotEmpty)
+                  ...recentRequests.map((request) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildRequestCard(request),
+                  )),
+              ],
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-        // 3. List Data (Only show if NOT loading and NOT empty)
-        if (!isLoading && recentRequests.isNotEmpty)
-          ...recentRequests.map((request) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildRequestCard(request),
-          )),
-      ],
-            ),
-          )
-          ]
-          ));
-    }
-  
-
-   Widget _buildRequestCard(Map<String, dynamic> request) {
+  Widget _buildRequestCard(Map<String, dynamic> request) {
     final status = request['status'] as String;
     final isPending = status == 'Pending';
     final isApproved = status == 'Approved';
-    //final isRejected = status == 'Rejected';
 
     // Format dates
     String dateRange = '';
     if (request['start_date'] != null && request['end_date'] != null) {
       final startDate = DateTime.parse(request['start_date']);
-
       final endDate = DateTime.parse(request['end_date']);
       
       if (startDate.day == endDate.day && 
@@ -752,8 +775,20 @@ Widget _buildQuickActions() {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(
+            color: isPending 
+                ? Colors.orange[200]! 
+                : isApproved 
+                    ? Colors.green[200]! 
+                    : Colors.red[200]!,
+            width: 1.5,
+          ),
           borderRadius: BorderRadius.circular(12),
+          color: isPending
+              ? Colors.orange[50]
+              : isApproved
+                  ? Colors.green[50]
+                  : Colors.red[50],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,6 +801,31 @@ Widget _buildQuickActions() {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Status badge at the top
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, 
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isPending
+                              ? Colors.orange[600]
+                              : isApproved
+                                  ? Colors.green[600]
+                                  : Colors.red[600],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         request['leave_type'] ?? 'Unknown',
                         style: const TextStyle(
@@ -777,8 +837,11 @@ Widget _buildQuickActions() {
                       if (dateRange.isNotEmpty)
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined,
-                                size: 14, color: Colors.grey[600]),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 14, 
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -791,45 +854,25 @@ Widget _buildQuickActions() {
                             ),
                           ],
                         ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time, 
+                            size: 14, 
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${request['days'].toInt()} day${request['days'] > 1 ? 's' : ''}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isPending
-                        ? Colors.orange[100]
-                        : isApproved
-                            ? Colors.green[100]
-                            : Colors.red[100],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isPending
-                          ? Colors.orange[800]
-                          : isApproved
-                              ? Colors.green[800]
-                              : Colors.red[800],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  '${request['days'].toInt()} day${request['days'] > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
                   ),
                 ),
               ],
@@ -840,7 +883,7 @@ Widget _buildQuickActions() {
     );
   }
 
-    String _formatDate(DateTime date) {
+  String _formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
@@ -852,7 +895,6 @@ Widget _buildQuickActions() {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
