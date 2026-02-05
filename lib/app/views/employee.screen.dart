@@ -18,7 +18,6 @@ import 'package:leaveflow/app/widgets/home.calendar.card.dart';
 
 class EmployeeScreen extends StatefulWidget {
   const EmployeeScreen({super.key});
-  const EmployeeScreen({super.key});
 
   @override
   State<EmployeeScreen> createState() => _EmployeeScreenState();
