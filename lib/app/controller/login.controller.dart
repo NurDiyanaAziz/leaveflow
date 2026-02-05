@@ -156,4 +156,6 @@ class LoginController extends GetxController {
       await clearSession();
       Get.offAll(() => LoginScreen());
   }
+
+  void clearForm() {}
 }  

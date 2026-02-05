@@ -226,6 +226,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {  // Changed s
     final status = request['status'] as String;
     final isPending = status == 'Pending';
     final isApproved = status == 'Approved';
+    // ignore: unused_local_variable
     final isRejected = status == 'Rejected';
 
     // Format dates
@@ -376,6 +377,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {  // Changed s
     );
   }
 
+  // ignore: unused_element
   void _showRequestDetails(Map<String, dynamic> request) {
     showModalBottomSheet(
       context: context,

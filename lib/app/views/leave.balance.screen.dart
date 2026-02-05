@@ -22,6 +22,15 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
     _loadLeaveBalance();
   }
 
+  // 👇 HELPER: Safely converts String/Int/Double to Double
+  // This prevents the "String has no instance method toInt" crash
+  double safeParse(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
   Future<void> _loadLeaveBalance() async {
     setState(() {
       isLoading = true;
@@ -31,19 +40,21 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
     try {
       final balance = await LeaveApiService.getLeaveBalance();
       
-      setState(() {
-        leaveBalance = balance;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load leave balance';
-      });
-      
-      print('Error loading leave balance: $e');
-      
       if (mounted) {
+        setState(() {
+          leaveBalance = balance;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load leave balance';
+        });
+      
+        print('Error loading leave balance: $e');
+      
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -103,7 +114,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
   Widget _buildErrorState() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      child: Container(
+      child: SizedBox(
         height: MediaQuery.of(context).size.height - 200,
         child: Center(
           child: Column(
@@ -146,7 +157,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
   Widget _buildEmptyState() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      child: Container(
+      child: SizedBox(
         height: MediaQuery.of(context).size.height - 200,
         child: Center(
           child: Column(
@@ -181,23 +192,26 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen> {
   }
 
 Widget _buildLeaveBalanceList() {
-    // Calculate totals
-    double totalAvailable = 0;
-    double totalUsed = 0;
-    double totalDays = 0;
+    // 1. Find the Annual Leave entry specifically for the Summary Card
+    // We look for any type containing "annual" (case insensitive)
+    var annualLeave = leaveBalance.firstWhere(
+      (element) => (element['leave_type'] ?? '').toString().toLowerCase().contains('annual'),
+      orElse: () => {}, // Return empty map if not found
+    );
 
-    for (var leave in leaveBalance) {
-      final type = (leave['leave_type'] ?? '').toString().toLowerCase();
-      
-      // 🛑 LOGIC FIX: Skip 'Unpaid Leave' for the summary totals
-      if (type.contains('unpaid')) {
-        continue; 
-      }
-
-      totalAvailable += (leave['available'] ?? 0).toDouble();
-      totalUsed += (leave['used'] ?? 0).toDouble();
-      totalDays += (leave['total'] ?? 0).toDouble();
+    // 2. Extract stats strictly for Annual Leave
+    // If no Annual Leave is found, these default to 0
+    double summaryTotal = safeParse(annualLeave['total_days'] ?? annualLeave['total']);
+    double summaryAvailable = safeParse(annualLeave['available']);
+    
+    // Calculate used
+    double summaryUsed = safeParse(annualLeave['used']);
+    if (summaryUsed == 0 && summaryTotal > 0) {
+      summaryUsed = summaryTotal - summaryAvailable;
     }
+    
+    // Fallback: If Annual Leave has 0 total (data error), maybe use the first available paid leave?
+    // For now, 0 is safer than misleading data.
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -206,12 +220,13 @@ Widget _buildLeaveBalanceList() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Summary Card (Now reflects only PAID leave)
-            _buildSummaryCard(totalAvailable, totalUsed, totalDays),
+            // 🟢 UPDATED: This now shows strictly ANNUAL LEAVE stats
+            _buildSummaryCard(summaryAvailable, summaryUsed, summaryTotal),
+            
             const SizedBox(height: 24),
 
             const Text(
-              'Leave Types',
+              'All Leave Types', // Changed title slightly
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -220,7 +235,7 @@ Widget _buildLeaveBalanceList() {
             ),
             const SizedBox(height: 12),
 
-            // Leave Balance Cards
+            // 3. The list below still shows EVERYTHING (Medical, Emergency, etc.)
             ...leaveBalance.map((leave) => Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _buildDetailedLeaveCard(leave),
@@ -234,7 +249,6 @@ Widget _buildLeaveBalanceList() {
       ),
     );
   }
-
   Widget _buildSummaryCard(double available, double used, double total) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -247,7 +261,6 @@ Widget _buildLeaveBalanceList() {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.blue.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -277,7 +290,6 @@ Widget _buildLeaveBalanceList() {
           Text(
             'Available',
             style: TextStyle(
-              // ignore: deprecated_member_use
               color: Colors.white.withOpacity(0.9),
               fontSize: 14,
             ),
@@ -334,7 +346,6 @@ Widget _buildLeaveBalanceList() {
         Text(
           label,
           style: TextStyle(
-            // ignore: deprecated_member_use
             color: Colors.white.withOpacity(0.8),
             fontSize: 12,
           ),
@@ -345,9 +356,14 @@ Widget _buildLeaveBalanceList() {
 
   Widget _buildDetailedLeaveCard(Map<String, dynamic> leave) {
     final leaveType = leave['leave_type'] ?? 'Unknown';
-    final available = (leave['available'] ?? 0).toDouble();
-    final used = (leave['used'] ?? 0).toDouble();
-    final total = (leave['total'] ?? 0).toDouble();
+    
+    // 🛠️ USE safeParse()
+    final total = safeParse(leave['total_days'] ?? leave['total']);
+    final available = safeParse(leave['available']);
+    
+    // Calculate used safely
+    final used = total - available;
+    
     final percentage = total > 0 ? (available / total) : 0.0;
 
     // Determine color based on availability
@@ -367,7 +383,6 @@ Widget _buildLeaveBalanceList() {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -385,7 +400,6 @@ Widget _buildLeaveBalanceList() {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -411,7 +425,6 @@ Widget _buildLeaveBalanceList() {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -456,7 +469,7 @@ Widget _buildLeaveBalanceList() {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: percentage,
+              value: percentage.clamp(0.0, 1.0),
               backgroundColor: Colors.grey[200],
               color: statusColor,
               minHeight: 10,

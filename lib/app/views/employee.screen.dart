@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:leaveflow/app/services/sharedprefs.dart';
+import 'package:leaveflow/app/views/leave.detail.screen.dart';
 import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/manager.screen.dart';
+import 'package:leaveflow/app/views/new.leave.request.dart';
 import 'package:leaveflow/app/views/profile.screen.dart';
 import 'package:leaveflow/app/views/settings.screen.dart';
-import 'package:leaveflow/app/views/login.screen.dart';
 import 'package:leaveflow/app/views/leave.balance.screen.dart';
 import 'package:leaveflow/app/views/leave.request.screen.dart';
 import 'package:leaveflow/app/services/leave_api_service.dart';
-import 'package:leaveflow/app/services/sharedprefs.dart';
 import 'package:leaveflow/app/views/new.leave.request.screen.dart';
 import 'package:leaveflow/app/widgets/home.calendar.card.dart';
 
@@ -22,7 +22,7 @@ class EmployeeScreen extends StatefulWidget {
 }
 
 class _EmployeeScreenState extends State<EmployeeScreen> {
-  final user = FirebaseAuth.instance.currentUser;
+  //final user = FirebaseAuth.instance.currentUser;
   
   List<Map<String, dynamic>> leaveBalance = [];
   List<Map<String, dynamic>> recentRequests = [];
@@ -31,13 +31,102 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   String? errorMessage;
   String? requestsErrorMessage;
   List<Map<String, dynamic>> allRequests = [];
+  List<Map<String, dynamic>> publicHolidays = [];
+  int pendingCount = 0;
+
+  String displayName = 'User';
+  String userRole = '';
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
+    _loadPendingCount();
+    _loadUserName();
     _loadLeaveBalance();
     _loadRecentRequests();
+    _loadHolidays();
   }
+
+  Future<void> _loadPendingCount() async {
+    // Only load if user is a manager (to save data)
+    // If you don't have an 'isManager' check yet, just run it anyway.
+    int count = await LeaveApiService.getPendingCount();
+    if (mounted) {
+      setState(() {
+        pendingCount = count;
+      });
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    // 1. Get Name
+    String? name = await SharedPrefs.getLocalStorage('name');
+    
+    // 2. Get Role (Make sure your Login screen saves this key: 'role')
+    String? role = await SharedPrefs.getLocalStorage('role');
+
+    // Fallback if name is missing
+    if (name == null || name.isEmpty) {
+      final user = FirebaseAuth.instance.currentUser;
+      name = user?.displayName ?? user?.email?.split('@')[0];
+    }
+
+    if (mounted) {
+      setState(() {
+        displayName = name ?? 'User';
+        userRole = role ?? 'Employee'; // Default to Employee if missing
+      });
+    }
+  }
+
+  Future<void> _loadUserName() async {
+    // Try to get the name from Local Storage (SharedPrefs) first
+    // This is what your Login screen saved, so it's the most accurate.
+    String? name = await SharedPrefs.getLocalStorage('name');
+
+    // If empty, fallback to Firebase
+    if (name == null || name.isEmpty) {
+      final user = FirebaseAuth.instance.currentUser;
+      await user?.reload(); // Force refresh from Firebase
+      name = user?.displayName ?? user?.email?.split('@')[0];
+    }
+
+    if (mounted) {
+      setState(() {
+        displayName = name ?? 'User';
+      });
+    }
+  }
+
+  // Future<void> _loadLeaveBalance() async {
+  //   if (!mounted) return;
+    
+  //   setState(() {
+  //     isLoading = true;
+  //     errorMessage = null;
+  //   });
+
+  //   try {
+  //     final balance = await LeaveApiService.getLeaveBalance();
+      
+  //     if (mounted) {
+  //       setState(() {
+  //         leaveBalance = balance;
+  //         isLoading = false;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       setState(() {
+  //         isLoading = false;
+  //         errorMessage = 'Failed to load leave balance';
+  //       });
+  //     }
+      
+  //     print('Error loading leave balance: $e');
+  //   }
+  // }
 
   Future<void> _loadLeaveBalance() async {
     if (!mounted) return;
@@ -48,6 +137,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     });
 
     try {
+      // 1. Call the new API
       final balance = await LeaveApiService.getLeaveBalance();
       
       if (mounted) {
@@ -63,12 +153,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           errorMessage = 'Failed to load leave balance';
         });
       }
-      
       print('Error loading leave balance: $e');
     }
   }
 
-  Future<void> _loadRecentRequests() async {
+Future<void> _loadRecentRequests() async {
     if (!mounted) return;
     
     setState(() {
@@ -77,9 +166,21 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     });
 
     try {
+      // 1. Fetch data from API
       final requests = await LeaveApiService.getRecentRequests(limit: 3);
       final all = await LeaveApiService.getAllRequests();
       
+      // 2. 🔥 ADD THIS SORTING LOGIC 🔥
+      // This forces 'Pending' requests to the top of the list
+      requests.sort((a, b) {
+        // If A is Pending and B is not, A goes first (-1)
+        if (a['status'] == 'Pending' && b['status'] != 'Pending') return -1;
+        // If B is Pending and A is not, B goes first (1)
+        if (a['status'] != 'Pending' && b['status'] == 'Pending') return 1;
+        // Otherwise, keep original order (sorted by date from SQL)
+        return 0; 
+      });
+
       if (mounted) {
         setState(() {
           recentRequests = requests;
@@ -97,12 +198,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       print('Error loading recent requests: $e');
     }
   }
-
   // to refresh both sections
   Future<void> _refreshAll() async {
     await Future.wait([
       _loadLeaveBalance(),
       _loadRecentRequests(),
+      _loadHolidays(),
+      _loadPendingCount(),
     ]);
   }
 
@@ -144,6 +246,20 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     }
   }
 
+  Future<void> _loadHolidays() async {
+    try {
+      // Assuming you have this method in LeaveApiService
+      final holidays = await LeaveApiService.getCalendarHolidays();
+      if (mounted) {
+        setState(() {
+          publicHolidays = holidays;
+        });
+      }
+    } catch (e) {
+      print("Error loading holidays: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,10 +286,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             icon: const Icon(Icons.refresh, color: Colors.blue),
             onPressed: _refreshAll, 
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-            onPressed: () {},
-          ),
         ],
       ),
       body: RefreshIndicator(
@@ -186,8 +298,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildWelcomeHeader(),
+                _buildManagerPortalCard(),
                 const SizedBox(height: 16),
-                
                 // Request Status at the top
                 _buildRecentRequests(),
                 const SizedBox(height: 16),
@@ -197,14 +309,14 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 const SizedBox(height: 16),
                 
                 // Calendar Card
-                HomeCalendarCard(leaveRequests: allRequests),
+                HomeCalendarCard(leaveRequests: allRequests,publicHolidays: publicHolidays,),
                 const SizedBox(height: 16),
                 
                 // Leave Balance
                 _buildLeaveBalance(),
                 
                 // Add extra spacing at the bottom for better scrolling
-                const SizedBox(height: 80),
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -215,56 +327,183 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 
   // UI Widget for Manager Portal Card
+  // ignore: unused_element
+  // Widget _buildManagerPortalCard() {
+  //   return InkWell(
+  //     onTap: () async {
+  //       // 1. Fetch the name from local storage to ensure accuracy
+  //       String? savedName = await SharedPrefs.getLocalStorage('name'); 
+
+  //       // 2. Using GetX to move to ManagerScreen
+  //       // Pass the name in 'arguments' so the ManagerScreen knows who is logged in without having to fetch it again
+  //        Get.to(
+  //         () => const ManagerScreen(),
+  //         arguments: {
+  //           // Use the fetched name, fallback to Firebase name, then 'Manager'
+  //           // ignore: dead_code
+  //           'name': savedName ?? displayName, 
+  //         },
+  //       );
+  //     },
+  //     borderRadius: BorderRadius.circular(16),
+  //     child: Container(
+  //       padding: const EdgeInsets.all(20),
+  //       decoration: BoxDecoration(
+  //         gradient: LinearGradient(
+  //           colors: [Colors.blue[900]!, Colors.blue[700]!],
+  //           begin: Alignment.topLeft,
+  //           end: Alignment.bottomRight,
+  //         ),
+  //         borderRadius: BorderRadius.circular(16),
+  //         boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+  //       ),
+  //       child: Row(
+  //         children: [
+  //           // Icon Container
+  //         Container(
+  //           padding: const EdgeInsets.all(8),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white.withOpacity(0.2),
+  //             shape: BoxShape.circle,
+  //           ),
+  //           child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 26), // Shield icon for Manager
+  //         ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: const [
+  //                 Text('Manager Portal', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+  //                 Text('Review staff leave requests', style: TextStyle(color: Colors.white70, fontSize: 13)),
+  //               ],
+  //             ),
+  //           ),
+  //           const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildManagerPortalCard() {
+    // Optional: Hide if not manager
+    if (userRole.toLowerCase() != 'manager') {
+      return const SizedBox.shrink(); // Returns nothing (hides the card)
+    }
+
     return InkWell(
       onTap: () async {
-        // 1. Fetch the name from local storage to ensure accuracy
-        String? savedName = await SharedPrefs.getLocalStorage('name'); 
-
-        // 2. Using GetX to move to ManagerScreen
-        // Pass the name in 'arguments' so the ManagerScreen knows who is logged in without having to fetch it again
-         Get.to(
+        final currentUser = FirebaseAuth.instance.currentUser;
+        Get.to(
           () => const ManagerScreen(),
           arguments: {
-            // Use the fetched name, fallback to Firebase name, then 'Manager'
-            'name': savedName ?? user?.displayName ?? 'Manager', 
+            'name': displayName, 
           },
         );
       },
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue[900]!, Colors.blue[700]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          colors: [Color(0xFF1A237E), Color(0xFF3949AB)], // Deep Navy Blue
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Icon Container
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manager Portal',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                
+                // 👇 DYNAMIC STATUS TEXT
+                if (pendingCount > 0)
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.priority_high, size: 12, color: Colors.purple[700]),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$pendingCount Requests Pending',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    'No pending actions',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 13,
+                    ),
+                  ),
+              ],
             ),
-            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 26), // Shield icon for Manager
-          ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Manager Portal', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('Review staff leave requests', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                ],
-              ),
+            
+            // 👇 BIG BADGE ICON
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 28),
+                ),
+                
+                // The Red Dot Counter
+                if (pendingCount > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent, // Urgent Color
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        pendingCount > 9 ? '9+' : '$pendingCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
           ],
         ),
       ),
@@ -287,7 +526,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             ),
             Flexible(
               child: Text(
-                '${user?.displayName ?? user?.email?.split('@')[0] ?? 'User'}!',
+                '$displayName!',
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.blue[700],
@@ -406,7 +645,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               ),
             )
           else
-            ...leaveBalance.map((leave) => Padding(
+            ...leaveBalance.take(5).map((leave) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _buildLeaveBalanceCard(leave),
                 )),
@@ -415,10 +654,109 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildLeaveBalanceCard(Map<String, dynamic> leave) {
-    final available = (leave['available'] ?? 0).toInt();
-    final total = (leave['total'] ?? 0).toInt();
-    final used = (leave['used'] ?? 0).toInt();
+  // Widget _buildLeaveBalanceCard(Map<String, dynamic> leave) {
+  //   final available = (leave['available'] ?? 0).toInt();
+  //   final total = (leave['total'] ?? 0).toInt();
+  //   final used = (leave['used'] ?? 0).toInt();
+  //   final percentage = total > 0 ? (available / total) : 0.0;
+
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       border: Border.all(color: Colors.grey[300]!),
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             Text(
+  //               leave['leave_type'] ?? 'Unknown',
+  //               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+  //             ),
+  //             Text(
+  //               '$total days total',
+  //               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Row(
+  //           children: [
+  //             RichText(
+  //               text: TextSpan(
+  //                 children: [
+  //                   TextSpan(
+  //                     text: '$available',
+  //                     style: const TextStyle(
+  //                       color: Colors.green,
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                   TextSpan(
+  //                     text: ' available',
+  //                     style: TextStyle(color: Colors.grey[700], fontSize: 14),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             const SizedBox(width: 16),
+  //             RichText(
+  //               text: TextSpan(
+  //                 children: [
+  //                   TextSpan(
+  //                     text: '$used',
+  //                     style: const TextStyle(
+  //                       color: Colors.orange,
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                   TextSpan(
+  //                     text: ' used',
+  //                     style: TextStyle(color: Colors.grey[700], fontSize: 14),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 12),
+  //         ClipRRect(
+  //           borderRadius: BorderRadius.circular(10),
+  //           child: LinearProgressIndicator(
+  //             value: percentage,
+  //             backgroundColor: Colors.grey[200],
+  //             color: Colors.blue[700],
+  //             minHeight: 8,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+Widget _buildLeaveBalanceCard(Map<String, dynamic> leave) {
+    // 👇 HELPER FUNCTION: Safely converts String/Int/Double to a Number
+    double safeParse(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is int) return value.toDouble();
+      if (value is double) return value;
+      // If it's a String (e.g. "16.00"), parse it
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+
+    // 1. Get values safely using the helper
+    final total = safeParse(leave['total_days'] ?? leave['total']).toInt(); 
+    final available = safeParse(leave['available']).toInt();
+    
+    // 2. Calculate Used
+    final used = total - available;
+    
+    // 3. Calculate Percentage
     final percentage = total > 0 ? (available / total) : 0.0;
 
     return Container(
@@ -438,7 +776,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
               Text(
-                '$total days total',
+                '$total days total', 
                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
             ],
@@ -447,41 +785,17 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           Row(
             children: [
               RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$available',
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' available',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                    ),
-                  ],
-                ),
+                text: TextSpan(children: [
+                  TextSpan(text: '$available', style: const TextStyle(color: Colors.green, fontSize: 18, fontWeight: FontWeight.bold)),
+                  TextSpan(text: ' available', style: TextStyle(color: Colors.grey[700], fontSize: 14)),
+                ]),
               ),
               const SizedBox(width: 16),
               RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$used',
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' used',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                    ),
-                  ],
-                ),
+                text: TextSpan(children: [
+                  TextSpan(text: '$used', style: const TextStyle(color: Colors.orange, fontSize: 18, fontWeight: FontWeight.bold)),
+                  TextSpan(text: ' used', style: TextStyle(color: Colors.grey[700], fontSize: 14)),
+                ]),
               ),
             ],
           ),
@@ -489,7 +803,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: percentage,
+              value: percentage.clamp(0.0, 1.0), // Safety clamp ensures it never crashes UI
               backgroundColor: Colors.grey[200],
               color: Colors.blue[700],
               minHeight: 8,
@@ -500,26 +814,128 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
-    return SizedBox(
-      width: double.infinity, 
-      child: _buildActionButton(
-        'New Request',
-        Icons.add_circle_outline,
-        Colors.blue[700]!,
-        Colors.white,
-        onTap: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const NewLeaveRequestScreen(),
-            ),
-          );
+  // Widget _buildQuickActions() {
+  //   return SizedBox(
+  //     width: double.infinity, 
+  //     child: _buildActionButton(
+  //       'New Request',
+  //       Icons.add_circle_outline,
+  //       Colors.blue[700]!,
+  //       Colors.white,
+  //       onTap: () async {
+  //         final result = await Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => const NewLeavesRequestScreen(),
+  //           ),
+  //         );
           
-          if (result == true && mounted) {
-            _refreshAll();
-          }
-        },
+  //         if (result == true && mounted) {
+  //           _refreshAll();
+  //         }
+  //       },
+  //     ),
+  //   );
+  // }
+
+  Widget _buildQuickActions() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8), // Add breathing room
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.25), // Soft blue shadow
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NewLeavesRequestScreen(),
+              ),
+            );
+            
+            if (result == true && mounted) {
+              _refreshAll();
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[700]!, Colors.blue[500]!], // Employee Blue Brand
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                // 1. The Icon Container
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.edit_calendar_rounded, // Better icon for "Leave"
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // 2. The Text Labels
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'New Leave Request',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Submit casual, medical, or other leave',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 3. The Forward Arrow
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -716,7 +1132,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const NewLeaveRequestScreen(),
+                                  builder: (context) => const NewLeavesRequestScreen(),
                                 ),
                               );
                               if (result == true && mounted) {
@@ -747,142 +1163,156 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _buildRequestCard(Map<String, dynamic> request) {
-    final status = request['status'] as String;
-    final isPending = status == 'Pending';
-    final isApproved = status == 'Approved';
+Widget _buildRequestCard(Map<String, dynamic> request) {
+    // 1. Extract Data
+    final status = request['status'] ?? 'Pending';
+    final leaveType = request['leave_type'] ?? 'Leave';
+    final days = request['days'] ?? 0;
+    // ignore: unused_local_variable
+    final reason = request['reason'] ?? '';
+    
+    // 2. Color Logic: Pending = Orange, Cancelled = Grey (Low Priority)
+    Color statusColor;
+    Color bgColor;
+    
+    if (status == 'Approved') {
+      statusColor = Colors.green[700]!;
+      bgColor = Colors.green[50]!;
+    } else if (status == 'Rejected') {
+      statusColor = Colors.red[700]!;
+      bgColor = Colors.red[50]!;
+    } else if (status == 'Cancelled') {
+      statusColor = Colors.grey[500]!; // 🌑 Dark Grey text
+      bgColor = Colors.grey[100]!;     // 🌑 Light Grey background (Low Priority)
+    } else {
+      // Default / Pending
+      statusColor = Colors.orange[800]!; // 🟠 Bright Orange (High Visibility)
+      bgColor = Colors.orange[50]!;
+    }
 
-    // Format dates
-    String dateRange = '';
+    // 3. Date Formatting
+    String dateRange = "Date info unavailable";
     if (request['start_date'] != null && request['end_date'] != null) {
-      final startDate = DateTime.parse(request['start_date']);
-      final endDate = DateTime.parse(request['end_date']);
+      final start = DateTime.parse(request['start_date']);
+      final end = DateTime.parse(request['end_date']);
       
-      if (startDate.day == endDate.day && 
-          startDate.month == endDate.month && 
-          startDate.year == endDate.year) {
-        dateRange = _formatDate(startDate);
+      // If same day, show only one date
+      if (start.year == end.year && start.month == end.month && start.day == end.day) {
+        dateRange = _formatDate(start); 
       } else {
-        dateRange = '${_formatDate(startDate)} - ${_formatDate(endDate)}';
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        String startStr = '${months[start.month - 1]} ${start.day}';
+        String endStr = '${months[end.month - 1]} ${end.day}, ${end.year}';
+        dateRange = "$startStr - $endStr";
       }
     }
 
-    return InkWell(
-      onTap: () {
-        // TODO: Show request details
-      },
-      borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isPending 
-                ? Colors.orange[200]! 
-                : isApproved 
-                    ? Colors.green[200]! 
-                    : Colors.red[200]!,
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isPending
-              ? Colors.orange[50]
-              : isApproved
-                  ? Colors.green[50]
-                  : Colors.red[50],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () async {
+              // Navigate to Details
+              final result = await Get.to(() => LeaveDetailScreen(request: request));
+              // Refresh if cancelled
+              if (result == true) _refreshAll(); 
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      // Status badge at the top
+                      // Icon Box
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12, 
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isPending
-                              ? Colors.orange[600]
-                              : isApproved
-                                  ? Colors.green[600]
-                                  : Colors.red[600],
-                          borderRadius: BorderRadius.circular(20),
+                          color: bgColor, 
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                        child: Icon(_getLeaveIcon(leaveType), color: statusColor, size: 22),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        request['leave_type'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (dateRange.isNotEmpty)
-                        Row(
+                      const SizedBox(width: 12),
+                      
+                      // Title
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 14, 
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                dateRange,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
+                            Text(
+                              leaveType, 
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 16,
+                                // Grey out title if cancelled
+                                color: status == 'Cancelled' ? Colors.grey : Colors.black87 
                               ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "${days.toInt()} Day${days > 1 ? 's' : ''}", 
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13)
                             ),
                           ],
                         ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time, 
-                            size: 14, 
-                            color: Colors.grey[600],
+                      ),
+
+                      // Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: statusColor.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            color: statusColor, 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 10
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${request['days'].toInt()} day${request['days'] > 1 ? 's' : ''}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, thickness: 0.5),
+                  const SizedBox(height: 12),
+
+                  // Bottom Row: Date
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 6),
+                      Text(dateRange, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-
   String _formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -935,6 +1365,25 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         ),
       ),
     );
+  }
+
+  // Helper to pick an icon based on leave name
+  IconData _getLeaveIcon(String? type) {
+    if (type == null) return Icons.event;
+    final t = type.toLowerCase();
+    if (t.contains('sick') || t.contains('medical') || t.contains('hospital')) {
+      return Icons.local_hospital;
+    }
+    if (t.contains('annual') || t.contains('vacation')) {
+      return Icons.beach_access;
+    }
+    if (t.contains('maternity') || t.contains('paternity') || t.contains('marriage')) {
+      return Icons.favorite;
+    }
+    if (t.contains('compassionate')) {
+      return Icons.volunteer_activism;
+    }
+    return Icons.event_note; // Default icon
   }
   
 Widget _buildNavItem(IconData icon, String label, bool isActive, {required VoidCallback onTap}) {
